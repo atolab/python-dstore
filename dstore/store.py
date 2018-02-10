@@ -1,7 +1,7 @@
 import fnmatch
 import json
 from .abstract_store import AbstractStore
-from .controller import DController
+from .controller import StoreController
 
 class Store(AbstractStore):
 
@@ -16,7 +16,7 @@ class Store(AbstractStore):
         self.__local_cache = {}  # this is a cache that stores up
         # to __cache_size entry for URI whose prefix is not **home**
         self.__observers = {}
-        self.__controller = DController(self)
+        self.__controller = StoreController(self)
         self.__controller.start()
         self.logger = self.__controller.logger
 

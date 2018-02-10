@@ -9,20 +9,14 @@ import time
 import uuid
 import ctypes
 
+the_dds_controller = None
 
-class DController (AbstractController, Observer):
-    MAX_SAMPLES = 64
-    DISPOSED_INSTANCE = 32
+class DDSController:
 
-    def __init__(self, store):
-        super(DController, self).__init__()
-        self.logger = DLogger()
-        self.__store = store
-
+    def __init__(self):
+        print(">>> Initializing DDSController")
         self.dds_runtime = Runtime.get_runtime()
         self.dp = Participant(0)
-        self.pub = Publisher(self.dp, self.__store.root)
-        self.sub = Subscriber(self.dp, self.__store.root)
 
         self.store_info_topic = FlexyTopic(self.dp, "FOSStoreInfo")
         self.key_value_topic = FlexyTopic(self.dp, "FOSKeyValue")
@@ -32,6 +26,65 @@ class DController (AbstractController, Observer):
 
         self.missmv_topic = FlexyTopic(self.dp, "FOSStoreMissMV")
         self.hitmv_topic = FlexyTopic(self.dp, "FOSStoreHitMV")
+        self.pubMap = {}
+        self.subMap = {}
+
+    def get_pub(self, path):
+        p = None
+        if path in self.pubMap.keys():
+            p = self.pubMap[path]
+        else:
+            p = Publisher(self.dp, path)
+            print("Creation pub for path {}".format(path))
+            self.pubMap[path] = p
+
+        return p
+
+    def get_sub(self, path):
+        s = None
+        if path in self.subMap.keys():
+            s = self.subMap[path]
+        else:
+            s = Subscriber(self.dp, path)
+            print("Creation sub for path {}".format(path))
+            self.pubMap[path] = s
+
+        return s
+
+
+    @staticmethod
+    def controller():
+        global the_dds_controller
+        if the_dds_controller is not None:
+            return the_dds_controller
+        else:
+            the_dds_controller = DDSController()
+            return the_dds_controller
+
+
+class StoreController (AbstractController, Observer):
+    MAX_SAMPLES = 64
+    DISPOSED_INSTANCE = 32
+
+    def __init__(self, store):
+        super(StoreController, self).__init__()
+        self.dds_controller = DDSController.controller()
+        self.logger = DLogger()
+        self.__store = store
+
+        self.dp = self.dds_controller.dp
+
+        self.pub = self.dds_controller.get_pub(self.__store.root)
+        self.sub = self.dds_controller.get_sub(self.__store.root)
+
+        self.store_info_topic = self.dds_controller.store_info_topic
+        self.key_value_topic = self.dds_controller.key_value_topic
+
+        self.hit_topic = self.dds_controller.hit_topic
+        self.miss_topic = self.dds_controller.miss_topic
+
+        self.missmv_topic = self.dds_controller.missmv_topic
+        self.hitmv_topic = self.dds_controller.hitmv_topic
 
 
         self.store_info_writer = FlexyWriter(self.pub,
@@ -101,6 +154,7 @@ class DController (AbstractController, Observer):
                                         self.hitmv_topic,
                                         None,
                                         DDS_Event)
+
 
 
     def log_samples(self, dr):
