@@ -35,7 +35,6 @@ class DDSController:
             p = self.pubMap[path]
         else:
             p = Publisher(self.dp, path)
-            print("Creation pub for path {}".format(path))
             self.pubMap[path] = p
 
         return p
@@ -46,7 +45,6 @@ class DDSController:
             s = self.subMap[path]
         else:
             s = Subscriber(self.dp, path)
-            print("Creation sub for path {}".format(path))
             self.pubMap[path] = s
 
         return s
