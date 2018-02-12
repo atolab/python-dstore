@@ -16,7 +16,7 @@ class DDSController:
     def __init__(self):
         print(">>> Initializing DDSController")
         self.dds_runtime = Runtime.get_runtime()
-        self.dp = Participant()
+        self.dp = Participant(0)
 
         self.store_info_topic = FlexyTopic(self.dp, "FOSStoreInfo")
         self.key_value_topic = FlexyTopic(self.dp, "FOSKeyValue")
