@@ -59,6 +59,8 @@ class DDSController:
             the_dds_controller = DDSController()
             return the_dds_controller
 
+    def close(self):
+        self.dds_runtime.close()
 
 class StoreController (AbstractController, Observer):
     MAX_SAMPLES = 64
@@ -462,6 +464,6 @@ class StoreController (AbstractController, Observer):
     def stop(self):
         info = StoreInfo(sid=self.__store.store_id, sroot=self.__store.root, shome=self.__store.home)
         self.store_info_writer.dispose_instance(info)
-        self.dds_runtime.close()
-        # self.logger.debug('DController',"Stopping..")
+        DDSController.controller().close()
+
 
