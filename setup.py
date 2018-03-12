@@ -8,5 +8,5 @@ setup(
     packages=['dstore', ],
     author='kydos',
     url='https://github.com/atolab/dstore-python',
-    install_requires=['pycham']
+    install_requires=['python-cdds']
 )
