@@ -152,13 +152,12 @@ class Store(AbstractStore):
 
     def update_value(self, uri, value, version):
         succeeded = False
+        if self.__is_metaresource(uri):
+            self.logger.error('update_value({})'.format(uri), 'This is a metaresource should never be stored in cache!!!!')
+            return False
 
         current_version = self.get_version(uri)
-        self.logger.debug('Store',
-                          'Updating URI: {0} to value: {1} and version = {2} -- older version was : {3}'.format(uri,
-                                                                                                                value,
-                                                                                                                version,
-                                                                                                                current_version))
+        self.logger.debug('Store',  'Updating URI: {0} to value: {1} and version = {2} -- older version was : {3}'.format(uri, value, version, current_version))
         if current_version != None:
             self.logger.debug('Store', 'Updating URI: Version None')
             if current_version <= version:
@@ -340,8 +339,7 @@ class Store(AbstractStore):
             self.logger.debug('Store', 'Resolving: {0}'.format(uri))
             rv = self.__controller.resolve(uri)
             if rv != None:
-                self.logger.debug('Store',
-                                  'URI: {0} was resolved to val = {1} and ver = {2}'.format(uri, rv[0], rv[1]))
+                self.logger.debug('Store',  'URI: {0} was resolved to val = {1} and ver = {2}'.format(uri, rv[0], rv[1]))
                 self.update_value(uri, rv[0], rv[1])
                 self.notify_observers(uri, rv[0], rv[1])
                 return rv[0]
@@ -349,6 +347,20 @@ class Store(AbstractStore):
                 return None
         else:
             return v[0]
+
+
+    def resolve(self, uri):
+        rv = self.__controller.resolve(uri)
+        if rv != (None, -1):
+            self.logger.debug('Store', 'URI: {0} was resolved to val = {1} and ver = {2}'.format(uri, rv[0], rv[1]))
+            #print('IS URI A METARESOURCE {}'.format(self.__is_metaresource(uri)))
+            if not self.__is_metaresource(uri):
+                self.update_value(uri, rv[0], rv[1])
+            self.notify_observers(uri, rv[0], rv[1])
+            return rv[0]
+        else:
+            return None
+
 
     def getAll(self, uri):
         xs = []
@@ -464,35 +476,50 @@ class Store(AbstractStore):
         r = '~{}~'.format(resource)
         self.__metaresources.update({r: action})
 
+    def __is_metaresource(self, uri):
+        u = uri.split('/')[-1]
+        if u.endswith('~') and u.startswith('~'):
+            return True
+        return False
+
     def get_metaresources(self):
         return self.__metaresources
 
     def __get_stores(self, uri):
+        self.logger.debug('__get_stores', 'uri {}'.format(uri))
         return self.discovered_stores
 
     def __get_keys_under(self, uri):
         keys = self.keys()
         ks = []
 
+        if isinstance(uri, list):
+            uri = uri[0]
+
         if '*' in uri:
-            pass
-            # do search with fnmatch
+            uri = uri + '*'
+            for k in keys:
+                self.logger.debug('__get_keys_under', '{} match {}? {}'.format(k, uri, fnmatch.fnmatch(k, uri)))
+                if fnmatch.fnmatch(k, uri):
+                    ks.append(k)
         else:
             for k in keys:
+                self.logger.debug('__get_keys_under', '{} starts with {}? {}'.format(k, uri, k.startswith(uri)))
                 if k.startswith(uri):
                     ks.append(k)
         return ks
 
     def __check_writing_rights(self, uri):
         # TODO add system_id to store values
-        if uri.startswith('afos://{}/{}'.format('<sys-id>', self.store_id)):
-            return True
-        elif uri.startswith('dfos://'):
-            return True
-        elif not uri.startswith('dfos://') and not uri.startswith('afos://'):
-            return True
-        else:
-            return False
+        # if uri.startswith('afos://{}/{}'.format('<sys-id>', self.store_id)):
+        #     return True
+        # elif uri.startswith('dfos://'):
+        #     return True
+        # elif not uri.startswith('dfos://') and not uri.startswith('afos://'):
+        #     return True
+        # else:
+        #     return False
+        return True
 
     def close(self):
         self.__controller.stop()

@@ -169,10 +169,13 @@ class StoreController (AbstractController, Observer):
         for (d, i) in samples:
             if i.valid_data and (d.source_sid != self.__store.store_id):
 
-                u = d.key.split('/')[-1]
-                if u.endswith('~') and u.startswith('~'):
-                    if u in self.__store.get_metaresources.keys():
-                        v = (self.__store.get_metaresources.get(u)(''.join(d.key.rsplit(u, 1))), 0)
+                if self.__is_metaresource(d.key) and d.key.startswith(self.__store.home):
+                    u = d.key.split('/')[-1]
+                    if u in self.__store.get_metaresources().keys():
+                        uri = '/'.join(d.key.split('/')[:-1])
+                        mr = self.__store.get_metaresources().get(u)(uri)
+                        v = (mr, 0)
+
                 else:
                     v = self.__store.get_value(d.key)
 
@@ -192,8 +195,8 @@ class StoreController (AbstractController, Observer):
         for (d, i) in samples:
             if i.valid_data and (d.source_sid != self.__store.store_id):
 
-                u = d.key.split('/')[-1]
-                if u.endswith('~') and u.startswith('~'):
+                if self.__is_metaresource(d.key):
+                    u = d.key.split('/')[-1]
                     if u in self.__store.get_metaresources().keys():
                         va = self.__store.get_metaresources().get(u)(''.join(d.key.rsplit(u, 1)))
                         xs = [(d.key, va, 0)]
@@ -223,20 +226,19 @@ class StoreController (AbstractController, Observer):
                 rsid = d.sid
                 rvalue = d.value
                 rversion = d.version
-                self.logger.debug('DController', '>>>>> SID {0} Key {1} Version {2} Value {3}'.format(rsid, rkey,
-                                                                                                      rversion, rvalue))
-                self.logger.debug('DController', ' MY STORE ID {0} MY HOME {1}'.format(self.__store.store_id,
-                                                                                       self.__store.home))
+                self.logger.debug('DController', '>>>>> SID {0} Key {1} Version {2} Value {3}'.format(rsid, rkey, rversion, rvalue))
+                self.logger.debug('DController', ' MY STORE ID {0} MY HOME {1}'.format(self.__store.store_id,  self.__store.home))
 
                 self.logger.debug('DController', 'Current store value {0}'.format(self.__store.get_value(rkey)))
                 self.logger.debug('DController', 'self put? {0}'.format(rsid != self.__store.store_id))
                 # We eagerly add all values to the cache to avoid problems created by inversion of miss and store
                 if rsid != self.__store.store_id:
                     self.logger.debug('DController',">>>>>>>> Handling remote put in for key = " + rkey)
-                    r = self.__store.update_value(rkey, rvalue, rversion)
-                    if r:
-                        self.logger.debug('DController',">> Updated " + rkey)
-                        self.__store.notify_observers(rkey, rvalue, rversion)
+                    if not self.__is_metaresource(rkey):
+                        r = self.__store.update_value(rkey, rvalue, rversion)
+                        if r:
+                            self.logger.debug('DController', ">> Updated " + rkey)
+                            self.__store.notify_observers(rkey, rvalue, rversion)
                     else:
                         self.logger.debug('DController',">> Received old version of " + rkey)
                 else:
@@ -436,6 +438,12 @@ class StoreController (AbstractController, Observer):
 
         return v
 
+
+    def __is_metaresource(self, uri):
+            u = uri.split('/')[-1]
+            if u.endswith('~') and u.startswith('~'):
+                return True
+            return False
 
     def start(self):
         self.logger.debug('DController',"Advertising Store with Id {0}".format(self.__store.store_id))
