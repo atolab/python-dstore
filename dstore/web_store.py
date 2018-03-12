@@ -52,7 +52,8 @@ class WebStore (object):
         # self.logger.logger = self.logger_impl
         self.storeMap = {}
 
-    async def process(self, websocket, cmd):
+    @asyncio.coroutine
+    def process(self, websocket, cmd):
         if cmd is not None:
             xs = [x for x in cmd.split(' ') if x is not '']
             if len(xs) < 2:
@@ -61,7 +62,7 @@ class WebStore (object):
                 cid = xs[0]
                 sid = xs[1]
                 args = xs[2:]
-                await self.handle_command(websocket, cid, sid, args)
+                yield from self.handle_command(websocket, cid, sid, args)
 
 
     def create(self, sid, args):
@@ -152,14 +153,19 @@ class WebStore (object):
         print("success = {}".format(success))
         return success
 
-    async def send_error(self, websocket, val):
-        await websocket.send("NOK {}".format(val))
 
-    async def send_success(self, websocket, val):
-        await websocket.send("OK {}".format(val))
+    @asyncio.coroutine
+    def send_error(self, websocket, val):
+        yield from websocket.send("NOK {}".format(val))
 
 
-    async def handle_command(self, websocket, cid, sid, args):
+    @asyncio.coroutine
+    def send_success(self, websocket, val):
+        yield from websocket.send("OK {}".format(val))
+
+
+    @asyncio.coroutine
+    def handle_command(self, websocket, cid, sid, args):
         # self.logger.debug("fog05ws", ">> Handling command {}".format(cid))
         # print(">> Handling command {}".format(cid))
 
@@ -243,29 +249,30 @@ class WebStore (object):
                         prefix = 'OK'
 
 
-        await websocket.send('{} {}'.format(prefix, result))
+        yield from websocket.send('{} {}'.format(prefix, result))
         # if success:
-        #     await self.send_success(websocket, result)
+        #     yield from self.send_success(websocket, result)
         # else:
-        #     await self.send_error(websocket, result)
+        #     yield from self.send_error(websocket, result)
 
     def authenticate(self, client):
-        if self.auth == None:
+        if self.auth is None:
             return True
         else:
-            client_auth = path.split('/')[1]
-            return client_auth == self.auth
+            return client == self.auth
 
-    async def dispatch(self, websocket, path):
+
+    @asyncio.coroutine
+    def dispatch(self, websocket, path):
         try:
             while True:
                 raddr = websocket.remote_address
                 client_auth = path.split('/')[1]
                 if self.authenticate(client_auth):
                     while True:
-                        message = await websocket.recv()
+                        message = yield from websocket.recv()
                         print(">> Processing message {}".format(message))
-                        await self.process(websocket, message)
+                        yield from self.process(websocket, message)
 
                 else:
                     print(">> Closing connection because of invalid authentication.")
