@@ -34,7 +34,7 @@ class DDSController:
         if path in self.pubMap.keys():
             p = self.pubMap[path]
         else:
-            p = Publisher(self.dp, path)
+            p = Publisher(self.dp, Publisher.partition(path))
             self.pubMap[path] = p
 
         return p
@@ -44,7 +44,7 @@ class DDSController:
         if path in self.subMap.keys():
             s = self.subMap[path]
         else:
-            s = Subscriber(self.dp, path)
+            s = Subscriber(self.dp, Publisher.partition(path))
             self.pubMap[path] = s
 
         return s
