@@ -214,14 +214,18 @@ class StoreController (AbstractController, Observer):
         self.__store.remote_remove(uri)
 
     def handle_remote_put(self, reader):
+        print(">>>>>>>>>>>>. handle_remote_put")
         samples = reader.take(DDS_ANY_SAMPLE_STATE)
 
         for (d, i) in samples:
             self.logger.debug('DController', ">>>>>>>> Handling remote put d.key {0}".format(d.key))
+            print('DController', ">>>>>>>> Handling remote put d.key {0}".format(d.key))
             if i.is_disposed_instance():
-                self.logger.debug('DController','>>>>> D {0}'.format(d))
+                print('>>>>>>>>>>>>. handle_remote_put for DISPOSE INSTANCE ', '>>>>> D {0}'.format(d.key))
+                self.logger.debug('DController','>>>>> D {0}'.format(d.key))
                 self.handle_remove(d.key)
             elif i.valid_data:
+                print('>>>>>>>>>>>>. handle_remote_put for UPDATED INSTANCE ', '>>>>> D {0}'.format(d.key))
                 rkey = d.key
                 rsid = d.sid
                 rvalue = d.value
