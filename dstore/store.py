@@ -200,6 +200,7 @@ class Store(AbstractStore):
 
         # It is always the observer that inserts data in the cache
         self.__controller.onPut(uri, value, v)
+        print("notify_observers in put")
         self.notify_observers(uri, value, v)
         return v
 
@@ -211,6 +212,7 @@ class Store(AbstractStore):
         v = self.next_version(uri)
         self.__unchecked_store_value(uri, value, v)
         self.__controller.onPput(uri, value, v)
+        print("notify_observers in pput")
         self.notify_observers(uri, value, v)
 
     def conflict_handler(self, action):
@@ -287,6 +289,7 @@ class Store(AbstractStore):
         value = json.dumps(data)
         self.__unchecked_store_value(uri, value, version)
         self.__controller.onDput(uri, value, version)
+        print("notify_observers in dput")
         self.notify_observers(uri, value, version)
         return True
 

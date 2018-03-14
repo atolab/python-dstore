@@ -237,6 +237,7 @@ class StoreController (AbstractController, Observer):
                     if not self.__is_metaresource(rkey):
                         r = self.__store.update_value(rkey, rvalue, rversion)
                         if r:
+                            print(">> Updated " + rkey)
                             self.logger.debug('DController', ">> Updated " + rkey)
                             self.__store.notify_observers(rkey, rvalue, rversion)
                     else:
