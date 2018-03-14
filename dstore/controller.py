@@ -306,6 +306,7 @@ class StoreController (AbstractController, Observer):
         # self.logger.debug('DController',"onGet Not yet...")
 
     def onRemove(self, uri):
+        print (">>>>>>> ON REMOVE {}".format(uri))
         v = KeyValue(key=uri, value=uri, sid=self.__store.store_id, version=0)
         self.key_value_writer.dispose_instance(v)
 
