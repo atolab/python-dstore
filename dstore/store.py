@@ -329,12 +329,13 @@ class Store(AbstractStore):
 
     def get(self, uri):
 
-        u = uri.split('/')[-1]
-        if u.endswith('~') and u.startswith('~'):
-            if u in self.__metaresources.keys():
+        if self.__is_metaresource(uri):
+            if uri.startswith(self.home):
+                u = uri.split('/')[-1]
                 return self.__metaresources.get(u)(uri.rsplit(u, 1))
             else:
                 return self.resolve(uri)
+
         v = self.get_value(uri)
         if v is None:
             self.__controller.onMiss()
