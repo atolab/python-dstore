@@ -220,6 +220,8 @@ class StoreController (AbstractController, Observer):
         for (d, i) in samples:
             self.logger.debug('DController', ">>>>>>>> Handling remote put d.key {0}".format(d.key))
             print('DController', ">>>>>>>> Handling remote put d.key {0}".format(d.key))
+            print('\t\tSOURCE TIMESTAMP {}'.format(i.source_timestamp))
+            print('\t\tRECEPTION TIMESTAMP {}'.format(i.reception_timestamp))
             if i.is_disposed_instance():
                 print('>>>>>>>>>>>>. handle_remote_put for DISPOSE INSTANCE ', '>>>>> D {0}'.format(d.key))
                 self.logger.debug('DController','>>>>> D {0}'.format(d.key))
