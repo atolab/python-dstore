@@ -200,7 +200,7 @@ class Store(AbstractStore):
 
         # It is always the observer that inserts data in the cache
         self.__controller.onPut(uri, value, v)
-        print("notify_observers in put")
+        #print("notify_observers in put")
         self.notify_observers(uri, value, v)
         return v
 
@@ -212,7 +212,7 @@ class Store(AbstractStore):
         v = self.next_version(uri)
         self.__unchecked_store_value(uri, value, v)
         self.__controller.onPput(uri, value, v)
-        print("notify_observers in pput")
+        #print("notify_observers in pput")
         self.notify_observers(uri, value, v)
 
     def conflict_handler(self, action):
@@ -289,7 +289,7 @@ class Store(AbstractStore):
         value = json.dumps(data)
         self.__unchecked_store_value(uri, value, version)
         self.__controller.onDput(uri, value, version)
-        print("notify_observers in dput")
+        #print("notify_observers in dput")
         self.notify_observers(uri, value, version)
         return True
 
@@ -334,22 +334,28 @@ class Store(AbstractStore):
             if u in self.__metaresources.keys():
                 return self.__metaresources.get(u)(uri.rsplit(u, 1))
             else:
-                return None
-
+                return self.resolve(uri)
         v = self.get_value(uri)
-        if v == None:
+        if v is None:
             self.__controller.onMiss()
-            self.logger.debug('Store', 'Resolving: {0}'.format(uri))
-            rv = self.__controller.resolve(uri)
-            if rv != None:
-                self.logger.debug('Store',  'URI: {0} was resolved to val = {1} and ver = {2}'.format(uri, rv[0], rv[1]))
-                self.update_value(uri, rv[0], rv[1])
-                self.notify_observers(uri, rv[0], rv[1])
-                return rv[0]
-            else:
-                return None
+            self.logger.debug('DStore', 'Resolving: {0}'.format(uri))
+            return self.resolve(uri)
         else:
             return v[0]
+        # v = self.get_value(uri)
+        # if v == None:
+        #     self.__controller.onMiss()
+        #     self.logger.debug('Store', 'Resolving: {0}'.format(uri))
+        #     rv = self.__controller.resolve(uri)
+        #     if rv != None:
+        #         self.logger.debug('Store',  'URI: {0} was resolved to val = {1} and ver = {2}'.format(uri, rv[0], rv[1]))
+        #         self.update_value(uri, rv[0], rv[1])
+        #         self.notify_observers(uri, rv[0], rv[1])
+        #         return rv[0]
+        #     else:
+        #         return None
+        # else:
+        #     return v[0]
 
 
     def resolve(self, uri):
