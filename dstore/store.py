@@ -157,6 +157,7 @@ class Store(AbstractStore):
             return False
 
         current_version = self.get_version(uri)
+        print('Store', 'Updating URI: {0} to value: {1} and version = {2} -- older version was : {3}'.format(uri, value, version, current_version))
         self.logger.debug('Store',  'Updating URI: {0} to value: {1} and version = {2} -- older version was : {3}'.format(uri, value, version, current_version))
         if current_version != None:
             self.logger.debug('Store', 'Updating URI: Version None')
