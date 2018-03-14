@@ -173,6 +173,9 @@ class Store(AbstractStore):
         return succeeded
 
     def notify_observers(self, uri, value, v):
+        print('Store', ">>>>>>>> notify_observers")
+        print('Store', 'URI {0}'.format(uri))
+
         self.logger.debug('Store', ">>>>>>>> notify_observers")
         self.logger.debug('Store', 'URI {0}'.format(uri))
         self.logger.debug('Store', 'URI  TYPE {0}'.format(type(uri)))
@@ -182,8 +185,10 @@ class Store(AbstractStore):
 
         self.logger.debug('Store', 'OBSERVER SIZE {0}'.format(len(list(self.__observers.keys()))))
         for key in list(self.__observers.keys()):
+            print('Store', 'OBSERVER KEY {0}'.format(key))
             self.logger.debug('Store', 'OBSERVER KEY {0}'.format(key))
             if fnmatch.fnmatch(uri, key) or fnmatch.fnmatch(key, uri):
+                print('Store', ">>>>>>>> notify_observers inside if")
                 self.logger.debug('Store', ">>>>>>>> notify_observers inside if")
                 self.__observers.get(key)(uri, value, v)
 
