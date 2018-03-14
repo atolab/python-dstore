@@ -160,9 +160,9 @@ class Store(AbstractStore):
         print('Store', 'Updating URI: {0} to value: {1} and version = {2} -- older version was : {3}'.format(uri, value, version, current_version))
         self.logger.debug('Store',  'Updating URI: {0} to value: {1} and version = {2} -- older version was : {3}'.format(uri, value, version, current_version))
         if current_version is not None:
-            print('Store', 'Updating URI: Version None')
-            self.logger.debug('Store', 'Updating URI: Version None')
-            if current_version <= version:
+            print('Store', 'Updating URI: Version is not None')
+            self.logger.debug('Store', 'Updating URI: Version is not None')
+            if current_version < version:
                 self.__unchecked_store_value(uri, value, version)
                 succeeded = True
         else:
