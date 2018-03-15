@@ -5,6 +5,7 @@ import sys
 from .store import Store
 
 
+
 # The commands accepted by this server have the format:
 #     command store-id arg1 arg2 ... argn
 # where the command represents the method to execute on the given store-id and the args are the
@@ -280,6 +281,15 @@ class WebStore (object):
             print(">> Remote peer closed the connection, doing the same.")
             websocket.close()
 
+    def stop(self):
+            try:
+                for id in list(self.storeMap.keys()):
+                    store = self.storeMap.pop(id)
+                    store.close()
+            except Exception as e:
+                print('Error on exiting {}'.format(e))
+            finally:
+                return
 
 
     def start(self):
