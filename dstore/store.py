@@ -368,8 +368,10 @@ class Store(AbstractStore):
 
     def resolve(self, uri):
         rv = self.__controller.resolve(uri)
+        # print('Store', 'Resolve {} {}'.format(uri, rv))
         if rv != (None, -1):
             self.logger.debug('Store', 'URI: {0} was resolved to val = {1} and ver = {2}'.format(uri, rv[0], rv[1]))
+            # print('Store', 'URI: {0} was resolved to val = {1} and ver = {2}'.format(uri, rv[0], rv[1]))
             #print('IS URI A METARESOURCE {}'.format(self.__is_metaresource(uri)))
             if not self.__is_metaresource(uri):
                 self.update_value(uri, rv[0], rv[1])
@@ -400,6 +402,7 @@ class Store(AbstractStore):
 
     def resolveAll(self, uri):
         xs = self.__controller.resolveAll(uri)
+        # print('Store', 'Resolve All {} {}'.format(uri, xs))
         self.logger.debug('Store', ' Resolved resolveAll = {0}'.format(xs))
         ys = self.getAll(uri)
 
