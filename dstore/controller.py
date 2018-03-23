@@ -14,7 +14,7 @@ the_dds_controller = None
 class DDSController:
 
     def __init__(self):
-        print(">>> Initializing DDSController")
+        #print(">>> Initializing DDSController")
         self.dds_runtime = Runtime.get_runtime()
         self.dp = Participant(0)
 
@@ -214,20 +214,20 @@ class StoreController (AbstractController, Observer):
         self.__store.remote_remove(uri)
 
     def handle_remote_put(self, reader):
-        print(">>>>>>>>>>>>. handle_remote_put")
+        #print(">>>>>>>>>>>>. handle_remote_put")
         samples = reader.take(DDS_ANY_SAMPLE_STATE)
 
         for (d, i) in samples:
             self.logger.debug('DController', ">>>>>>>> Handling remote put d.key {0}".format(d.key))
-            print('DController', ">>>>>>>> Handling remote put d.key {0}".format(d.key))
-            print('\t\tSOURCE TIMESTAMP {}'.format(i.source_timestamp))
-            print('\t\tRECEPTION TIMESTAMP {}'.format(i.reception_timestamp))
+            #print('DController', ">>>>>>>> Handling remote put d.key {0}".format(d.key))
+            #print('\t\tSOURCE TIMESTAMP {}'.format(i.source_timestamp))
+            #print('\t\tRECEPTION TIMESTAMP {}'.format(i.reception_timestamp))
             if i.is_disposed_instance():
-                print('>>>>>>>>>>>>. handle_remote_put for DISPOSE INSTANCE ', '>>>>> D {0}'.format(d.key))
+                #print('>>>>>>>>>>>>. handle_remote_put for DISPOSE INSTANCE ', '>>>>> D {0}'.format(d.key))
                 self.logger.debug('DController','>>>>> D {0}'.format(d.key))
                 self.handle_remove(d.key)
             elif i.valid_data:
-                print('>>>>>>>>>>>>. handle_remote_put for UPDATED INSTANCE ', '>>>>> D {0}'.format(d.key))
+                #print('>>>>>>>>>>>>. handle_remote_put for UPDATED INSTANCE ', '>>>>> D {0}'.format(d.key))
                 rkey = d.key
                 rsid = d.sid
                 rvalue = d.value
@@ -243,7 +243,7 @@ class StoreController (AbstractController, Observer):
                     if not self.__is_metaresource(rkey):
                         r = self.__store.update_value(rkey, rvalue, rversion)
                         if r:
-                            print(">> Updated " + rkey)
+                            #print(">> Updated " + rkey)
                             self.logger.debug('DController', ">> Updated " + rkey)
                             self.__store.notify_observers(rkey, rvalue, rversion)
                     else:
@@ -339,7 +339,7 @@ class StoreController (AbstractController, Observer):
             :return: the [value], if something is found
         """
         # @TODO: This should be in the config...
-        delta = 0.250
+        delta = 0.010
         if timeout is None:
             timeout = delta
 
@@ -350,7 +350,7 @@ class StoreController (AbstractController, Observer):
         maxRetries = max(len(peers),  10)
         retries = 0
         values = []
-        while (peers != [] and retries < maxRetries):
+        while (retries < maxRetries):
             samples = self.hitmv_reader.take(DDS_ANY_STATE)
             time.sleep(timeout + max(retries - 1, 0) * delta)
             self.logger.debug('DController',">>>> Resolve loop #{0} got {1} samples".format(retries, str(samples)))
@@ -404,7 +404,8 @@ class StoreController (AbstractController, Observer):
         """
 
         # @TODO: This should be in the config...
-        delta = 0.250
+        #delta = 0.250
+        delta = 0.010
         if timeout is None:
             timeout = delta
 
@@ -418,7 +419,8 @@ class StoreController (AbstractController, Observer):
 
         retries = 0
         v = (None, -1)
-        while peers != [] and retries < maxRetries:
+        #peers != [] and
+        while retries < maxRetries:
             samples = self.hit_reader.take(DDS_ANY_STATE)
             time.sleep(timeout + max(retries-1, 0) * delta)
             # self.logger.debug('DController',">>>> Resolve loop #{0} got {1}".format(retries, str(samples)))

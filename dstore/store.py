@@ -157,10 +157,10 @@ class Store(AbstractStore):
             return False
 
         current_version = self.get_version(uri)
-        print('Store', 'Updating URI: {0} to value: {1} and version = {2} -- older version was : {3}'.format(uri, value, version, current_version))
+        #print('Store', 'Updating URI: {0} to value: {1} and version = {2} -- older version was : {3}'.format(uri, value, version, current_version))
         self.logger.debug('Store',  'Updating URI: {0} to value: {1} and version = {2} -- older version was : {3}'.format(uri, value, version, current_version))
         if current_version is not None:
-            print('Store', 'Updating URI: Version is not None')
+            #print('Store', 'Updating URI: Version is not None')
             self.logger.debug('Store', 'Updating URI: Version is not None')
             if current_version < version:
                 self.__unchecked_store_value(uri, value, version)
@@ -173,8 +173,8 @@ class Store(AbstractStore):
         return succeeded
 
     def notify_observers(self, uri, value, v):
-        print('Store', ">>>>>>>> notify_observers")
-        print('Store', 'URI {0}'.format(uri))
+        ##print('Store', ">>>>>>>> notify_observers")
+        ##print('Store', 'URI {0}'.format(uri))
 
         self.logger.debug('Store', ">>>>>>>> notify_observers")
         self.logger.debug('Store', 'URI {0}'.format(uri))
@@ -185,10 +185,10 @@ class Store(AbstractStore):
 
         self.logger.debug('Store', 'OBSERVER SIZE {0}'.format(len(list(self.__observers.keys()))))
         for key in list(self.__observers.keys()):
-            print('Store', 'OBSERVER KEY {0}'.format(key))
+            #print('Store', 'OBSERVER KEY {0}'.format(key))
             self.logger.debug('Store', 'OBSERVER KEY {0}'.format(key))
             if fnmatch.fnmatch(uri, key) or fnmatch.fnmatch(key, uri):
-                print('Store', ">>>>>>>> notify_observers inside if")
+                #print('Store', ">>>>>>>> notify_observers inside if")
                 self.logger.debug('Store', ">>>>>>>> notify_observers inside if")
                 self.__observers.get(key)(uri, value, v)
 
@@ -207,7 +207,7 @@ class Store(AbstractStore):
 
         # It is always the observer that inserts data in the cache
         self.__controller.onPut(uri, value, v)
-        #print("notify_observers in put")
+        ##print("notify_observers in put")
         self.notify_observers(uri, value, v)
         return v
 
@@ -219,7 +219,7 @@ class Store(AbstractStore):
         v = self.next_version(uri)
         self.__unchecked_store_value(uri, value, v)
         self.__controller.onPput(uri, value, v)
-        #print("notify_observers in pput")
+        ##print("notify_observers in pput")
         self.notify_observers(uri, value, v)
 
     def conflict_handler(self, action):
@@ -286,7 +286,7 @@ class Store(AbstractStore):
                 data = self.data_merge(data, d)
                 self.logger.debug('Store', '>>>merged data  {0} '.format(data))
         else:
-            # print('{0} type {1}'.format(values,type(values)))
+            # #print('{0} type {1}'.format(values,type(values)))
             jvalues = json.loads(values)
             self.logger.debug('Store', 'dput delta value = {0}, data = {1}'.format(jvalues, data))
             data = self.data_merge(data, jvalues)
@@ -296,7 +296,7 @@ class Store(AbstractStore):
         value = json.dumps(data)
         self.__unchecked_store_value(uri, value, version)
         self.__controller.onDput(uri, value, version)
-        #print("notify_observers in dput")
+        ##print("notify_observers in dput")
         self.notify_observers(uri, value, version)
         return True
 
@@ -368,11 +368,11 @@ class Store(AbstractStore):
 
     def resolve(self, uri):
         rv = self.__controller.resolve(uri)
-        # print('Store', 'Resolve {} {}'.format(uri, rv))
+        # #print('Store', 'Resolve {} {}'.format(uri, rv))
         if rv != (None, -1):
             self.logger.debug('Store', 'URI: {0} was resolved to val = {1} and ver = {2}'.format(uri, rv[0], rv[1]))
-            # print('Store', 'URI: {0} was resolved to val = {1} and ver = {2}'.format(uri, rv[0], rv[1]))
-            #print('IS URI A METARESOURCE {}'.format(self.__is_metaresource(uri)))
+            # #print('Store', 'URI: {0} was resolved to val = {1} and ver = {2}'.format(uri, rv[0], rv[1]))
+            ##print('IS URI A METARESOURCE {}'.format(self.__is_metaresource(uri)))
             if not self.__is_metaresource(uri):
                 self.update_value(uri, rv[0], rv[1])
             self.notify_observers(uri, rv[0], rv[1])
@@ -402,7 +402,7 @@ class Store(AbstractStore):
 
     def resolveAll(self, uri):
         xs = self.__controller.resolveAll(uri)
-        # print('Store', 'Resolve All {} {}'.format(uri, xs))
+        # #print('Store', 'Resolve All {} {}'.format(uri, xs))
         self.logger.debug('Store', ' Resolved resolveAll = {0}'.format(xs))
         ys = self.getAll(uri)
 
