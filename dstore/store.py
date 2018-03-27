@@ -298,7 +298,7 @@ class Store(AbstractStore):
         self.__controller.onDput(uri, value, version)
         ##print("notify_observers in dput")
         self.notify_observers(uri, value, version)
-        return True
+        return version
 
     def observe(self, uri, action):
         self.__observers.update({uri: action})
