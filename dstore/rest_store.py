@@ -1,12 +1,12 @@
-#!/usr/bin/env python3
-from flask import Flask, Response, request
+from flask import Flask, request
+
 from . import Store
 import logging
 import json
 import time
 
 
-# {'result': bool, "store_id":sting , "data": [{'key':string, 'value':string, 'version': int}]}
+# {'result': bool, "store_id":string , "data": [{'key':string, 'value':string, 'version': int}]}
 
 class RestStore(object):
 
@@ -14,24 +14,35 @@ class RestStore(object):
         self.address = address
         self.port = port
         self.stores = {}
-        self.app = Flask(address)
-        self.logger = logging.Logger('dstore rest')
+        self.app = Flask(__name__)
+        self.logger = self.app.logger
+        self.app.add_url_rule('/', 'index', self.index, methods=['GET'])
+        self.app.add_url_rule('/get/<store_id>/<path:uri>', 'get', self.get, methods=['GET'])
+        self.app.add_url_rule('/create/<store_id>', 'create', self.create, methods=['POST'])
+        self.app.add_url_rule('/put/<store_id>/<path:uri>', 'put', self.put, methods=['PUT'])
+        self.app.add_url_rule('/dput/<store_id>/<path:uri>', 'dput', self.dput, methods=['PATCH'], )
+        self.app.add_url_rule('/remove/<store_id>/<path:uri>', 'remove', self.destroy, methods=['DELETE'])
+        self.app.add_url_rule('/destroy/<store_id>', 'destroy',self.destroy, methods=['DELETE'])
 
-    @app.route('/')
+    #@app.route('/')
     def index(self):
         return json.dumps({'STORE REST API': {'version': 0.1}})
 
-    @app.route('/create/<store_id>', methods=['POST'])
+    #@app.route('/create/<store_id>', methods=['POST'])
     def create(self, store_id):
+
+        print('{}'.format(request.form))
         root = request.form.get('root')
         home = request.form.get('home')
-        size = int(request.form.get('size'))
+        size = int(request.form.get('size', 0))
+
+        print('CREATE {} -> {} -> {} -> {}'.format(store_id, root, home, size))
 
         store = Store(store_id, root, home, size)
         self.stores.update({store_id: (store, time.time())})
         return json.dumps({'result': True, "data": None})
 
-    @app.route('/get/<store_id>/<path:uri>', methods=['GET'])
+    #@app.route('/get/<store_id>/<path:uri>', methods=['GET'])
     def get(self, store_id, uri):
         v = None
 
@@ -46,6 +57,7 @@ class RestStore(object):
         else:
             v = store.get(uri)
 
+        print('V-> {}'.format(v))
         if v is not None or len(v) == 0:
             if isinstance(v, list):
                 data = []
@@ -57,7 +69,7 @@ class RestStore(object):
         else:
             return json.dumps({'result': True, "store_id": store_id, "data": [{'key': uri, 'value': None, 'version': None}]})
 
-    @app.route('/put/<store_id>/<path:uri>', methods=['PUT'])
+    #@app.route('/put/<store_id>/<path:uri>', methods=['PUT'])
     def put(self, store_id, uri):
         value = request.form.get('value')
         print('PUT -> {} -> {}'.format(uri, value))
@@ -70,7 +82,7 @@ class RestStore(object):
         version = store.put(uri, value)
         return json.dumps({'result': True, "store_id": store_id, "data": [{'key': uri, 'value': value, 'version': version}]})
 
-    @app.route('/dput/<store_id>/<path:uri>/', methods=['PATCH'])
+    #@app.route('/dput/<store_id>/<path:uri>/', methods=['PATCH'])
     def dput(self, store_id, uri):
 
         value = request.form.get('value')
@@ -83,7 +95,7 @@ class RestStore(object):
         version = store.dput(uri, value)
         return json.dumps({'result': True, "store_id": store_id, "data": [{'key': uri, 'value': value, 'version': version}]})
 
-    @app.route('/remove/<store_id>/<path:uri>', methods=['DELETE'])
+    #@app.route('/remove/<store_id>/<path:uri>', methods=['DELETE'])
     def remove(self, store_id, uri):
         store = self.stores.get(store_id, None)
         if store is None:
@@ -95,7 +107,7 @@ class RestStore(object):
         else:
             return json.dumps({'result': False, "store_id": store_id, "data": [{'key': uri, 'value': None, 'version': None}]})
 
-    @app.route('/destroy/<store_id>', methods=['DELETE'])
+    #@app.route('/destroy/<store_id>', methods=['DELETE'])
     def destroy(self, store_id):
         store = self.stores.get(store_id, None)
         if store is None:
