@@ -1,0 +1,15 @@
+#!/usr/bin/env python3
+import signal
+from dstore import RestStore
+
+def genlty_close(sig, frame):
+    if sig == signal.SIGINT:
+        if s is not None:
+            s.stop()
+        exit(0)
+
+
+s = RestStore()
+
+signal.signal(signal.SIGINT, genlty_close)
+s.start()

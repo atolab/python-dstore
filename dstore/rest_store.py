@@ -24,6 +24,12 @@ class RestStore(object):
         self.app.add_url_rule('/remove/<store_id>/<path:uri>', 'remove', self.destroy, methods=['DELETE'])
         self.app.add_url_rule('/destroy/<store_id>', 'destroy',self.destroy, methods=['DELETE'])
 
+
+    def __close_all_store(self):
+        for k in list(self.stores.keys()):
+            s = self.stores.get(k)
+            s.close()
+
     #@app.route('/')
     def index(self):
         return json.dumps({'STORE REST API': {'version': 0.1}})
@@ -117,14 +123,21 @@ class RestStore(object):
         self.stores.pop(store_id)
         return json.dumps({'result': True, "store_id": store_id, "data": None})
 
+    def stop(self):
+        self.__close_all_store()
+        func = request.environ.get('werkzeug.server.shutdown')
+        if func is None:
+            raise RuntimeError('Not running with the Werkzeug Server')
+        func()
+
+
     def start(self):
 
         try:
             self.app.run(debug=True, host=self.address, port=self.port)
         finally:
-            for k in list(self.stores.keys()):
-                s = self.stores.get(k)
-                s.close()
+            self.__close_all_store()
+
 
 
 
