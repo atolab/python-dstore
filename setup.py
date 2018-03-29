@@ -8,6 +8,6 @@ setup(
     packages=['dstore', ],
     author='kydos',
     url='https://github.com/atolab/dstore-python',
-    install_requires=['python-cdds'],
+    install_requires=['python-cdds','flask','websockets'],
     scripts=['bin/drest-server', 'bin/dwebsocket-server']
 )
