@@ -2,21 +2,22 @@ import logging
 import time
 import sys
 
+
 class DLogger:
     class __SingletonLogger:
         def __init__(self, file_name=None, debug_flag=False):
 
             if file_name is None:
-                self.log_file = 'fosagent_log.log' # str('fosagent_log_%d.log' % int(time.time()))
+                self.log_file = 'dstore.log' # str('fosagent_log_%d.log' % int(time.time()))
             else:
                 self.log_file = file_name
 
             self.debug_flag = debug_flag
 
             log_format = '[%(asctime)s] - [%(levelname)s] > %(message)s'
-            log_level = logging.INFO
+            log_level = logging.DEBUG
 
-            self.logger = logging.getLogger(__name__ + '.fog05.agent')
+            self.logger = logging.getLogger(__name__ + '.dstore')
 
             self.logger.setLevel(log_level)
             formatter = logging.Formatter(log_format)
