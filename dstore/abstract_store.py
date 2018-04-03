@@ -30,8 +30,7 @@ class Observer(object):
 class AbstractController(object):
 
     def start(self):
-        '''
-            This method starts the controller and 'connects' the cache to the rest of the system.
+        '''Starts the controller and 'connects' the cache to the rest of the system.
 
         '''
         raise NotImplemented('Not yet...')
@@ -50,22 +49,34 @@ class AbstractController(object):
 
 
     def stop(self):
-        '''
+        """
             Stops a controller and releases all resources used to receive/send data on the network.
-        '''
+        """
 
     def resolve(self, uri):
-        '''
-            Tries to resolve this URI on across the distributed caches
+        """Tries to resolve this URI on across the distributed caches
         :param uri: the URI to be resolved
         :return: the value, if something is found
-        '''
+
+        """
+
         raise NotImplemented('Not yet...')
+
 
 
 class AbstractStore(object):
 
     def __init__(self):
+        """Creates a new store.
+
+        :param store_id: the string representing the global store identifier.
+        :param root: the *root* of the store, in other terms the scope of resolutions
+                    for keys. URI an only resolved if the *root* is a prefixself.
+        :param home: the *home* of the store, all keys that have the *home* as
+                     prefix are kept in memory.
+        :param cache_size: the size of the cache that will be holding keys that
+                           have the root as a prefix but not the home.
+        """
         pass
 
 
@@ -74,23 +85,24 @@ class AbstractStore(object):
         :return: the keys contained by this store.
         '''
     def put(self,uri,value):
-        '''
-        uri eg. xrce://{nodeid or */** (* is only node ids, ** is all informations) or list of nodeids}/resurce
+        '''Put a **<uri, value>** tuple in this storeself.
+
+        uri eg.
+                fos://{nodeid or */**
+        (* is only node ids, ** is all informations) or list of nodeids/resurce
         value json obj
         '''
         raise NotImplementedError
 
     def pput(self,uri,value):
-        '''
-        Persistent put, in other terms this (k,v) will be restored when re-creating a cache with the same scope.
-
-        uri eg. xrce://{nodeid or */** (* is only node ids, ** is all informations) or list of nodeids}/resurce
+        ''' Persistent put, in other terms this (k,v) will be restored when re-creating a cache with the same scope.
+        uri eg. fos://{nodeid or */** (* is only node ids, ** is all informations) or list of nodeids}/resurce
         value json obj
         '''
         raise NotImplementedError
 
     def dput(self, uri, value):
-        '''
+        '''Delta put.
 
         :param uri: the URI for which a delta-put has to be applied. A delta put updates only the
                     attributes inlined in the URI, e.g.

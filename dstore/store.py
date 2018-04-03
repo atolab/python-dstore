@@ -4,8 +4,19 @@ from .abstract_store import AbstractStore
 from .controller import StoreController
 
 class Store(AbstractStore):
+    """This class provides the API to interact with the distributed store."""
 
     def __init__(self, store_id, root, home, cache_size):
+        """Creates a new store.
+
+        :param store_id: the string representing the global store identifier.
+        :param root: the *root* of the store, in other terms the scope of resolutions
+                    for keys. URI an only resolved if the *root* is a prefixself.
+        :param home: the *home* of the store, all keys that have the *home* as
+                     prefix are kept in memory.
+        :param cache_size: the size of the cache that will be holding keys that
+                           have the root as a prefix but not the home.
+        """
         super(Store, self).__init__()
         self.root = root
         self.home = home
@@ -26,12 +37,10 @@ class Store(AbstractStore):
         self.register_metaresource('stores', self.__get_stores)
 
     def keys(self):
-        '''
-
-        Get the lisy of keys available in the current store instance
+        """Get the lisy of keys available in the current store instance
 
         :return: List of string
-        '''
+        """
         return list(self.__store.keys())
 
     def is_stored_value(self, uri):
@@ -125,9 +134,7 @@ class Store(AbstractStore):
                 self.__observers.get(key)(uri, value, v)
 
     def put(self, uri, value):
-        '''
-
-        Store information <value> under key <uri> in the store
+        '''Store the  **<key, value>** tuple on the distributed store.
 
         :param uri: key
         :param value: value
@@ -152,6 +159,15 @@ class Store(AbstractStore):
         return v
 
     def pput(self, uri, value):
+        '''Persistently store the  **<key, value>** tuple on the distributed store.
+           This operation requires a DDS durability service in order to really
+           store data persistently.
+
+        :param uri: key
+        :param value: value
+        :return: the version
+        '''
+
         if not self.__check_writing_rights(uri):
             self.logger.debug('Store', 'No writing right for URI {0}'.format(type(uri)))
             return None
@@ -547,5 +563,3 @@ class Store(AbstractStore):
 
     def close(self):
         self.__controller.stop()
-
-
