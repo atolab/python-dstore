@@ -26,6 +26,12 @@ class Store(AbstractStore):
         self.register_metaresource('stores', self.__get_stores)
 
     def keys(self):
+        '''
+
+        Get the lisy of keys available in the current store instance
+
+        :return: List of string
+        '''
         return list(self.__store.keys())
 
     def is_stored_value(self, uri):
@@ -119,6 +125,14 @@ class Store(AbstractStore):
                 self.__observers.get(key)(uri, value, v)
 
     def put(self, uri, value):
+        '''
+
+        Store information <value> under key <uri> in the store
+
+        :param uri: key
+        :param value: value
+        :return: the version
+        '''
 
         if not self.__check_writing_rights(uri):
             self.logger.debug('Store', 'No writing right for URI {0}'.format(type(uri)))
@@ -152,6 +166,16 @@ class Store(AbstractStore):
         pass
 
     def dput(self, uri, values=None):
+        '''
+
+        Same as put but for delta updates, fields to be update can be part of the uri after an hashtag eg. /root/home/key#value3=newvalue
+
+        WARNING: this works only if values are dictionary/json data structures
+
+        :param uri: the uri rapresenting the resource, can contain delta updates
+        :param values: the delta update value can be none
+        :return: the new version
+        '''
 
         if not self.__check_writing_rights(uri):
             self.logger.debug('Store', 'No writing right for URI {0}'.format(type(uri)))
@@ -227,9 +251,26 @@ class Store(AbstractStore):
         return version
 
     def observe(self, uri, action):
+        '''
+
+        Register an observer to a specified key, key can contain wildcards eg. /root/home/myvalues/*
+
+        action has to take 3 parametes (uri, value, version)
+
+        :param uri: the uri to observe
+        :param action: the function to notify
+        :return: None
+        '''
         self.__observers.update({uri: action})
 
     def remove(self, uri):
+        '''
+
+        Remove a resource identified by uri from the store
+
+        :param uri: the key to remove
+        :return: None
+        '''
         if not self.__check_writing_rights(uri):
             self.logger.debug('Store', 'No writing right for URI {0}'.format(type(uri)))
             return None
@@ -261,6 +302,14 @@ class Store(AbstractStore):
         self.notify_observers(uri, None, None)
 
     def get(self, uri):
+        '''
+
+        Retrive a single value from the store, if not present in cache will resolve from remote stores
+
+        :param uri: key to retrieve
+        :return: the value
+        '''
+
 
         if self.__is_metaresource(uri):
             if uri.startswith(self.home):
@@ -293,6 +342,13 @@ class Store(AbstractStore):
 
 
     def resolve(self, uri):
+        '''
+
+        Same as get, but always tries to resolve from remote stores
+
+        :param uri: the key to resolve
+        :return: the value
+        '''
         rv = self.__controller.resolve(uri)
         # #print('Store', 'Resolve {} {}'.format(uri, rv))
         if rv != (None, -1):
@@ -308,6 +364,13 @@ class Store(AbstractStore):
 
 
     def getAll(self, uri):
+        '''
+
+        Same as get but key can containt wildcards, this will not cause a resolve in case of cache miss
+
+        :param uri: the uri of resources
+        :return: a list of (key, value, version)
+        '''
         xs = []
         u = uri.split('/')[-1]
         if u.endswith('~') and u.startswith('~'):
@@ -327,6 +390,13 @@ class Store(AbstractStore):
         return xs
 
     def resolveAll(self, uri):
+        '''
+
+        Same as getAll but always resolve
+
+        :param uri: the uri of resources
+        :return: a list of (key, value, version)
+        '''
         xs = self.__controller.resolveAll(uri)
         # #print('Store', 'Resolve All {} {}'.format(uri, xs))
         self.logger.debug('Store', ' Resolved resolveAll = {0}'.format(xs))
@@ -408,6 +478,14 @@ class Store(AbstractStore):
         raise NotImplemented
 
     def register_metaresource(self, resource, action):
+        '''
+
+        Allow to register a metaresouce and the action to be taken when someone access that metaresource
+
+        :param resource: the metaresource name
+        :param action: the action to retrieve the metaresource value
+        :return: None
+        '''
         #
         # reserved = gen - delims / sub - delims
         #
