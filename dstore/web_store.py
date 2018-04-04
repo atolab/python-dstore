@@ -41,7 +41,52 @@ class Dispatcher (object):
 
 
 class WebStore (object):
+    '''
+
+    This class provides the API to interact with the distributed store as well as the WebSocket service to access the Store
+
+    The commands accepted by this server have the format:
+        command store-id arg1 arg2 ... argn
+    where the command represents the method to execute on the given store-id and the args are the
+    arguments for the command.
+    
+    The commands currently supported are:
+    
+       create  sid root home cache-size   -> OK | NOK
+
+       close   sid                        -> OK | NOK
+    
+       gkeys    sid                        -> keys sid key1,key2,...,keyn
+
+       put     sid uri val                -> OK | NOK
+
+       dput     sid uri [val]             -> OK | NOK
+
+       get     sid uri                    -> value sid key value
+
+       aget     sid uri                    -> values sid key key1@value1,key2@value2,...,keyn@valuen
+
+       resolve  sid uri                    -> value sid key value
+
+       aresolve sid uri                    -> values sid key key1@value1,key2@value2,...,keyn@valuen
+
+       remove  sid uri                    -> OK | NOK
+    
+       observe sid uri cookie             -> stream notify sid cookie key value
+
+
+
+
+    '''
     def __init__(self, port, auth = None):
+        '''
+
+        Create the websocket server
+
+
+        :param port: port to listen
+        :param auth: authorization string
+        '''
         self.port = port
         self.auth = auth
         self.svc = None
