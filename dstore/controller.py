@@ -361,8 +361,8 @@ class StoreController (AbstractController, Observer):
                     self.logger.debug('DController',"I was looking to resolve uri: {0}".format(uri))
                     self.logger.debug('DController','>>>>>>>>> VALUE {0} KVAVE {1}'.format(values, d.kvave))
                     # Only remove if this was an answer for this key!
-                    if d.source_sid in peers and uri == d.key:
-                        peers.remove(d.source_sid)
+                    # if d.source_sid in peers and uri == d.key:
+                    #     peers.remove(d.source_sid)
                     if d.key == uri: # and d.dest_sid == self.__store.store_id:
                         values = values + d.kvave
 
@@ -426,11 +426,11 @@ class StoreController (AbstractController, Observer):
             for (d, i) in samples:
                 sn += 1
                 if i.valid_data and d.key == uri:
-                    # self.logger.debug('DController',"Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
-                    # self.logger.debug('DController',"I was looking to resolve uri: {0}".format(uri))
+                    self.logger.debug('DController',"Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
+                    self.logger.debug('DController',"I was looking to resolve uri: {0}".format(uri))
                     # # Only remove if this was an answer for this key!
-                    if d.source_sid in peers and uri == d.key and d.dest_sid == self.__store.store_id:
-                        peers.remove(d.source_sid)
+                    # if d.source_sid in peers and uri == d.key and d.dest_sid == self.__store.store_id:
+                    #     peers.remove(d.source_sid)
 
                     if d.key == uri and d.dest_sid == self.__store.store_id:
                         if int(d.version) > int(v[1]):
