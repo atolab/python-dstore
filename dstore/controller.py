@@ -4,6 +4,8 @@ from .logger import *
 from cdds import *
 import copy
 import time
+import zlib
+
 
 the_dds_controller = None
 
@@ -171,14 +173,14 @@ class StoreController (AbstractController, Observer):
                     if u in self.__store.get_metaresources().keys():
                         uri = '/'.join(d.key.split('/')[:-1])
                         mr = self.__store.get_metaresources().get(u)(uri)
-                        v = (mr, 0)
+                        v = (zlib.compress(mr.encode('utf-8')), 0)
 
                 else:
                     v = self.__store.get_value(d.key)
 
                 if v is not None:
                     self.logger.debug('DController.handle_miss', 'Serving Miss for {0}'.format(d.key))
-                    h = CacheHit(self.__store.store_id, d.source_sid, d.key, v[0], v[1])
+                    h = CacheHit(self.__store.store_id, d.source_sid, d.key, zlib.compress(v[0].encode('utf-8')), v[1])
                     self.hit_writer.write(h)
                 else:
                     self.logger.debug('DController.handle_miss', 'Store {0} did not resolve remote miss on key {1}'.format(
@@ -196,13 +198,16 @@ class StoreController (AbstractController, Observer):
                     u = d.key.split('/')[-1]
                     if u in self.__store.get_metaresources().keys():
                         va = self.__store.get_metaresources().get(u)(''.join(d.key.rsplit(u, 1)))
-                        xs = [(d.key, va, 0)]
+                        xs = [(d.key, zlib.compress(va.encode('utf-8')), 0)]
                 else:
-                    xs = self.__store.getAll(d.key)
+                    #xs = self.__store.getAll(d.key)
+                    ys = []
+                    for (k, va, ve) in self.__store.getAll(d.key):
+                        ys.append((k, zlib.compress(va.encode('utf-8')), ve))
 
 
                 self.logger.debug('DController','>>>> Serving Miss MV for key {0}'.format(d.key))
-                h = CacheHitMV(self.__store.store_id, d.source_sid, d.key, xs)
+                h = CacheHitMV(self.__store.store_id, d.source_sid, d.key, ys)
                 self.hitmv_writer.write(h)
 
 
@@ -227,7 +232,8 @@ class StoreController (AbstractController, Observer):
                 #print('>>>>>>>>>>>>. handle_remote_put for UPDATED INSTANCE ', '>>>>> D {0}'.format(d.key))
                 rkey = d.key
                 rsid = d.sid
-                rvalue = d.value
+                #rvalue = d.value
+                rvalue = zlib.decompress(d.value).decode()
                 rversion = d.version
                 self.logger.debug('DController', '>>>>> SID {0} Key {1} Version {2} Value {3}'.format(rsid, rkey, rversion, rvalue))
                 self.logger.debug('DController', ' MY STORE ID {0} MY HOME {1}'.format(self.__store.store_id,  self.__store.home))
@@ -291,17 +297,20 @@ class StoreController (AbstractController, Observer):
     def onPut(self, uri, val, ver):
         # self.logger.debug('DController',">> uri: " + uri)
         # self.logger.debug('DController',">> val: " + val)
-        v = KeyValue(key = uri , value = val, sid = self.__store.store_id, version = ver)
+        # v = KeyValue(key = uri , value = val, sid = self.__store.store_id, version = ver)
+        v = KeyValue(key = uri , value = zlib.compress(val.encode('utf-8')), sid = self.__store.store_id, version = ver)
         self.key_value_writer.write(v)
 
 
     # One of these for each operation on the cache...
     def onPput(self, uri, val, ver):
-        v = KeyValue(key = uri , value = val, sid = self.__store.store_id, version = ver)
+        v = KeyValue(key=uri, value=zlib.compress(val.encode('utf-8')), sid=self.__store.store_id, version=ver)
+        #v = KeyValue(key = uri , value = val, sid = self.__store.store_id, version = ver)
         self.key_value_writer.write(v)
 
     def onDput(self, uri, val, ver):
-        v = KeyValue(key = uri , value = val, sid = self.__store.store_id, version = ver)
+        v = KeyValue(key=uri, value=zlib.compress(val.encode('utf-8')), sid=self.__store.store_id, version=ver)
+        #v = KeyValue(key = uri , value = val, sid = self.__store.store_id, version = ver)
         self.key_value_writer.write(v)
 
 
@@ -380,10 +389,10 @@ class StoreController (AbstractController, Observer):
 
         for (k, va, ve) in values:
             if k not in filtered_values:
-                filtered_values.update({k: (k ,va ,ve)})
+                filtered_values.update({k: (k, zlib.decompress(va).decode(), ve)})
             else:
                 if ve > filtered_values.get(k)[2]:
-                    filtered_values.update({k: (k, va, ve)})
+                    filtered_values.update({k: (k, zlib.decompress(va).decode(), ve)})
 
 
 
@@ -426,15 +435,15 @@ class StoreController (AbstractController, Observer):
             for (d, i) in samples:
                 sn += 1
                 if i.valid_data and d.key == uri:
-                    # self.logger.debug('DController',"Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
-                    # self.logger.debug('DController',"I was looking to resolve uri: {0}".format(uri))
+                    self.logger.debug('DController',"Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
+                    self.logger.debug('DController',"I was looking to resolve uri: {0}".format(uri))
                     # # Only remove if this was an answer for this key!
-                    if d.source_sid in peers and uri == d.key and d.dest_sid == self.__store.store_id:
-                        peers.remove(d.source_sid)
+                    # if d.source_sid in peers and uri == d.key and d.dest_sid == self.__store.store_id:
+                    #     peers.remove(d.source_sid)
 
                     if d.key == uri and d.dest_sid == self.__store.store_id:
                         if int(d.version) > int(v[1]):
-                            v = (d.value, d.version)
+                            v = (zlib.decompress(d.value).decode(), d.version)
 
 
             if sn == 0 and v[0] is not None:
