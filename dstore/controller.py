@@ -402,8 +402,8 @@ class StoreController (AbstractController, Observer):
         """
 
         # @TODO: This should be in the config...
-        delta = 0.250
-        #delta = 0.150
+        #delta = 0.250
+        delta = 0.050
         if timeout is None:
             timeout = delta
 
@@ -413,7 +413,7 @@ class StoreController (AbstractController, Observer):
 
         peers = copy.deepcopy(self.__store.discovered_stores)
         # self.logger.debug('DController',"Trying to resolve {0} with peers {1}".format(uri, peers))
-        maxRetries = max(len(peers),  10)
+        maxRetries = max(len(peers),  5)
 
         retries = 0
         v = (None, -1)
