@@ -336,7 +336,8 @@ class StoreController (AbstractController, Observer):
             :return: the [value], if something is found
         """
         # @TODO: This should be in the config...
-        delta = 0.010
+        #delta = 0.010
+        delta = 0.150
         if timeout is None:
             timeout = delta
 
@@ -401,8 +402,8 @@ class StoreController (AbstractController, Observer):
         """
 
         # @TODO: This should be in the config...
-        #delta = 0.250
-        delta = 0.010
+        delta = 0.250
+        #delta = 0.150
         if timeout is None:
             timeout = delta
 
@@ -412,7 +413,7 @@ class StoreController (AbstractController, Observer):
 
         peers = copy.deepcopy(self.__store.discovered_stores)
         # self.logger.debug('DController',"Trying to resolve {0} with peers {1}".format(uri, peers))
-        maxRetries = max(len(peers),  3)
+        maxRetries = max(len(peers),  10)
 
         retries = 0
         v = (None, -1)
