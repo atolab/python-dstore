@@ -260,8 +260,8 @@ class StoreController (AbstractController, Observer):
         for (d, i) in samples:
             if i.valid_data:
                 rsid = d.sid
+                self.logger.debug('DController', ">>> Discovered store with id: " + rsid)
                 if rsid != self.__store.store_id:
-                    self.logger.debug('DController', ">>> Discovered store with id: " + rsid)
                     if rsid not in self.__store.discovered_stores.keys():
                         self.logger.debug('DController', ">>> Store with id: {} is new!".format(rsid))
                         self.__store.discovered_stores.update({rsid: time.time()})
