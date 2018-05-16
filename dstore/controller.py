@@ -4,6 +4,7 @@ from .logger import *
 from cdds import *
 import copy
 import time
+from time import sleep
 
 the_dds_controller = None
 
@@ -183,6 +184,9 @@ class StoreController (AbstractController, Observer):
                 else:
                     self.logger.debug('DController.handle_miss', 'Store {0} did not resolve remote miss on key {1}'.format(
                         self.__store.store_id, d.key))
+                    h = CacheHit(self.__store.store_id, d.source_sid, d.key, None, -1)
+                    self.hit_writer.write(h)
+
 
 
     def handle_miss_mv(self, r):
@@ -344,13 +348,17 @@ class StoreController (AbstractController, Observer):
         m = CacheMissMV(self.__store.store_id, uri)
         self.missmv_writer.write(m)
 
-        peers = copy.deepcopy(self.__store.discovered_stores)
-        maxRetries = max(len(peers),  10)
+
+        # maxRetries = max(min(len(peers), 3),  3)
         retries = 0
         values = []
-        while (retries < maxRetries):
+        peers = copy.deepcopy(self.__store.discovered_stores)
+        peers_id = []
+        answers = []
+
+        while peers != answers:
+            sleep(0.2)
             samples = self.hitmv_reader.take(DDS_ANY_STATE)
-            time.sleep(timeout + max(retries - 1, 0) * delta)
             self.logger.debug('DController',">>>> Resolve loop #{0} got {1} samples".format(retries, str(samples)))
             for s in samples:
                 d = s[0]
@@ -364,11 +372,11 @@ class StoreController (AbstractController, Observer):
                     # Only remove if this was an answer for this key!
                     # if d.source_sid in peers and uri == d.key:
                     #     peers.remove(d.source_sid)
+                    answers.append(d.source_sid)
                     if d.key == uri: # and d.dest_sid == self.__store.store_id:
                         values = values + d.kvave
 
 
-            retries += 1
 
         # now we need to consolidate values
         self.logger.debug('DController', 'Resolved Values = {0}'.format(values))
@@ -411,39 +419,46 @@ class StoreController (AbstractController, Observer):
         m = CacheMiss(self.__store.store_id, uri)
         self.miss_writer.write(m)
 
-        peers = copy.deepcopy(self.__store.discovered_stores)
+        # peers = copy.deepcopy(self.__store.discovered_stores)
+        # answers = []
         # self.logger.debug('DController',"Trying to resolve {0} with peers {1}".format(uri, peers))
-        maxRetries = max(len(peers),  5)
+        # maxRetries = max(len(peers),  5)
 
-        retries = 0
+        # retries = 0
         v = (None, -1)
         #peers != [] and
-        while retries < maxRetries:
-            samples = self.hit_reader.take(DDS_ANY_STATE)
-            time.sleep(timeout + max(retries-1, 0) * delta)
+        # while retries < maxRetries:
+        # while peers != answers:
+        #     peers = copy.deepcopy(self.__store.discovered_stores)
+        sleep(0.2)
+        samples = self.hit_reader.take(DDS_ANY_STATE)
+            # time.sleep(timeout + max(retries-1, 0) * delta)
             # self.logger.debug('DController',">>>> Resolve loop #{0} got {1}".format(retries, str(samples)))
 
-            sn = 0
-            for (d, i) in samples:
-                sn += 1
-                if i.valid_data and d.key == uri:
-                    self.logger.debug('DController',"Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
-                    self.logger.debug('DController',"I was looking to resolve uri: {0}".format(uri))
+            # sn = 0
+
+        for (d, i) in samples:
+            # sn += 1
+            if i.valid_data and d.key == uri:
+                self.logger.debug('DController',"Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
+                self.logger.debug('DController',"I was looking to resolve uri: {0}".format(uri))
                     # # Only remove if this was an answer for this key!
                     # if d.source_sid in peers and uri == d.key and d.dest_sid == self.__store.store_id:
                     #     peers.remove(d.source_sid)
 
-                    if d.key == uri and d.dest_sid == self.__store.store_id:
-                        if int(d.version) > int(v[1]):
-                            v = (d.value, d.version)
 
+                if d.key == uri and d.dest_sid == self.__store.store_id:
+                    if int(d.version) > int(v[1]):
+                        v = (d.value, d.version)
 
-            if sn == 0 and v[0] is not None:
-                return v
-
-            retries += 1
 
         return v
+        # if v[0] is not None:
+        #     return v
+        #
+        #     # retries += 1
+        #
+        # return v
 
 
     def __is_metaresource(self, uri):
