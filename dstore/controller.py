@@ -255,20 +255,27 @@ class StoreController (AbstractController, Observer):
     def cache_discovered(self,reader):
         self.logger.debug('DController','New Cache discovered, current view = {0}'.format(self.__store.discovered_stores))
         samples = reader.take(DDS_ANY_SAMPLE_STATE)
+        t_now = time.time()
 
         for (d, i) in samples:
             if i.valid_data:
                 rsid = d.sid
                 self.logger.debug('DController',">>> Discovered new store with id: " + rsid)
-                if rsid != self.__store.store_id and rsid not in self.__store.discovered_stores:
-                    self.__store.discovered_stores.append(rsid)
+                if rsid != self.__store.store_id and rsid not in self.__store.discovered_stores.keys():
+                    self.__store.discovered_stores.update({rsid: time.time()})
                     self.advertise_presence()
+                elif rsid in self.__store.discovered_stores.keys():
+                    t_old = self.__store.discovered_stores.get(rsid)
+                    if t_now-t_old > 5:
+                        self.advertise_presence()
+                    self.__store.discovered_stores.update({rsid: time.time()})
+
             elif i.is_disposed_instance():
                 rsid = d.key
                 self.logger.debug('DController',">>> Store {0} has been disposed".format(rsid))
                 if rsid in self.__store.discovered_stores:
                     self.logger.debug('DController',">>> Removing Store id: " + rsid)
-                    self.__store.discovered_stores.remove(rsid)
+                    self.__store.discovered_stores.pop(rsid)
 
 
 
@@ -454,7 +461,17 @@ class StoreController (AbstractController, Observer):
 
     def start(self):
         self.logger.debug('DController',"Advertising Store with Id {0}".format(self.__store.store_id))
-        self.advertise_presence()
+
+        import threading
+        threading.Thread(target=self.advertise_presence_timer, args=[5]).start()
+
+
+    def advertise_presence_timer(self,timer):
+        while True:
+            info = StoreInfo(sid=self.__store.store_id, sroot=self.__store.root, shome=self.__store.home)
+            self.store_info_writer.write(info)
+            time.sleep(timer)
+
 
     def advertise_presence(self):
         info = StoreInfo(sid=self.__store.store_id, sroot=self.__store.root, shome=self.__store.home)
