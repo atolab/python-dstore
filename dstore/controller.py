@@ -267,8 +267,8 @@ class StoreController (AbstractController, Observer):
                         self.__store.discovered_stores.update({rsid: time.time()})
                         self.advertise_presence()
                     elif rsid in self.__store.discovered_stores.keys():
-                        self.logger.debug('DController', ">>> Store with id: {} is old t_old-t_now={}!".format(rsid, t_now-t_old))
                         t_old = self.__store.discovered_stores.get(rsid)
+                        self.logger.debug('DController', ">>> Store with id: {} is old t_old-t_now={}!".format(rsid, t_now - t_old))
                         if t_now-t_old > 7:
                             self.advertise_presence()
                             self.logger.debug('DController', ">>> Responding to advertising at store id: {}".format(rsid))
