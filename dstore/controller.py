@@ -204,6 +204,9 @@ class StoreController (AbstractController, Observer):
                 else:
                     xs = self.__store.getAll(d.key)
 
+                if len(xs) == 0:
+                    xs = None
+
                 self.logger.debug('DController','>>>> Serving Miss MV for key {} store: {} data: {}'.format(d.key, d.source_sid, xs))
                 h = CacheHitMV(self.__store.store_id, d.source_sid, d.key, xs)
                 self.hitmv_writer.write(h)
