@@ -22,7 +22,7 @@ class Store(AbstractStore):
         self.home = home
         self.store_id = store_id
         self.__store = {}  # This stores URI whose prefix is **home**
-        self.discovered_stores = []  # list of discovered stores not including self
+        self.discovered_stores = {}  # list of discovered stores not including self
         self.__cache_size = cache_size
         self.__local_cache = {}  # this is a cache that stores up
         # to __cache_size entry for URI whose prefix is not **home**
