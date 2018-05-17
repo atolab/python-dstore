@@ -385,7 +385,7 @@ class StoreController (AbstractController, Observer):
 
         while peers != answers:
             sleep(0.2)
-            samples = self.hitmv_reader.take(DDS_ANY_STATE)
+            samples = list(self.hitmv_reader.take(DDS_ANY_STATE))
             self.logger.debug('DController',">>>> Resolve loop #{} got {} samples -> {}".format(retries, len(samples), samples))
             for s in samples:
                 d = s[0]
@@ -459,7 +459,7 @@ class StoreController (AbstractController, Observer):
         # while peers != answers:
         #     peers = copy.deepcopy(self.__store.discovered_stores)
         sleep(0.2)
-        samples = self.hit_reader.take(DDS_ANY_STATE)
+        samples = list(self.hitmv_reader.take(DDS_ANY_STATE))
             # time.sleep(timeout + max(retries-1, 0) * delta)
             # self.logger.debug('DController',">>>> Resolve loop #{0} got {1}".format(retries, str(samples)))
 
