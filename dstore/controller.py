@@ -5,6 +5,7 @@ from cdds import *
 import copy
 import time
 from time import sleep
+import random
 
 the_dds_controller = None
 
@@ -209,6 +210,8 @@ class StoreController (AbstractController, Observer):
 
                 self.logger.debug('DController','>>>> Serving Miss MV for key {} store: {} data: {}'.format(d.key, d.source_sid, xs))
                 h = CacheHitMV(self.__store.store_id, d.source_sid, d.key, xs)
+                r_sleep = random.randint(1, 10)/100
+                time.sleep(r_sleep)
                 self.hitmv_writer.write(h)
 
 
@@ -412,6 +415,9 @@ class StoreController (AbstractController, Observer):
                         answers.append(d.source_sid)
                         if d.key == uri and d.kvave is not None: # and d.dest_sid == self.__store.store_id:
                             values = values + d.kvave
+                    else:
+                        self.logger.debug('DController', "Already got an answer from {}".format(d.source_sid))
+
             self.logger.debug('DController', ">>>>>>>>>>>>> Resolver finishing loop #{} with peers: {} answers: {}".format(retries, len(peers), len(answers)))
             retries = retries+1
 
