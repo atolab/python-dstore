@@ -477,7 +477,7 @@ class StoreController (AbstractController, Observer):
         # while peers != answers:
         #     peers = copy.deepcopy(self.__store.discovered_stores)
             #sleep(0.2)
-            samples = list(self.hitmv_reader.take(DDS_ANY_STATE))
+            samples = list(self.hit_reader.take(DDS_ANY_STATE))
 
             self.logger.debug('DController', ">>>> Resolve loop #{} got {} samples -> {}".format(retries, len(samples), samples))
 
