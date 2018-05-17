@@ -205,7 +205,7 @@ class StoreController (AbstractController, Observer):
                     xs = self.__store.getAll(d.key)
 
 
-                self.logger.debug('DController','>>>> Serving Miss MV for key {0}'.format(d.key))
+                self.logger.debug('DController','>>>> Serving Miss MV for key {} store: {} data: {}'.format(d.key, d.source_sid, xs))
                 h = CacheHitMV(self.__store.store_id, d.source_sid, d.key, xs)
                 self.hitmv_writer.write(h)
 
@@ -254,25 +254,53 @@ class StoreController (AbstractController, Observer):
             else:
                 self.logger.debug('DController',">>>>>> Some store unregistered instance {0}".format(d.key))
 
-
-
-    def cache_discovered(self,reader):
-        self.logger.debug('DController','New Cache discovered, current view = {0}'.format(self.__store.discovered_stores))
+    def cache_discovered(self, reader):
+        self.logger.debug('DController', 'New Cache discovered, current view = {0}'.format(self.__store.discovered_stores))
         samples = reader.take(DDS_ANY_SAMPLE_STATE)
+        t_now = time.time()
 
         for (d, i) in samples:
             if i.valid_data:
                 rsid = d.sid
-                self.logger.debug('DController',">>> Discovered new store with id: " + rsid)
-                if rsid != self.__store.store_id and rsid not in self.__store.discovered_stores:
-                    self.__store.discovered_stores.append(rsid)
-                    self.advertise_presence()
+                self.logger.debug('DController', ">>> Discovered store with id: " + rsid)
+                if rsid != self.__store.store_id:
+                    if rsid not in self.__store.discovered_stores.keys():
+                        self.logger.debug('DController', ">>> Store with id: {} is new!".format(rsid))
+                        self.__store.discovered_stores.update({rsid: time.time()})
+                        self.advertise_presence()
+                    elif rsid in self.__store.discovered_stores.keys():
+                        t_old = self.__store.discovered_stores.get(rsid)
+                        self.logger.debug('DController', ">>> Store with id: {} is old t_old-t_now={}!".format(rsid, t_now - t_old))
+                        if t_now - t_old > 7:
+                            self.advertise_presence()
+                            self.logger.debug('DController', ">>> Responding to advertising at store id: {}".format(rsid))
+
+                        self.__store.discovered_stores.update({rsid: time.time()})
+
             elif i.is_disposed_instance():
                 rsid = d.key
-                self.logger.debug('DController',">>> Store {0} has been disposed".format(rsid))
+                self.logger.debug('DController', ">>> Store {0} has been disposed".format(rsid))
                 if rsid in self.__store.discovered_stores:
-                    self.logger.debug('DController',">>> Removing Store id: " + rsid)
-                    self.__store.discovered_stores.remove(rsid)
+                    self.logger.debug('DController', ">>> Removing Store id: " + rsid)
+                    self.__store.discovered_stores.pop(rsid)
+
+    # def cache_discovered(self,reader):
+    #     self.logger.debug('DController','New Cache discovered, current view = {0}'.format(self.__store.discovered_stores))
+    #     samples = reader.take(DDS_ANY_SAMPLE_STATE)
+    #
+    #     for (d, i) in samples:
+    #         if i.valid_data:
+    #             rsid = d.sid
+    #             self.logger.debug('DController',">>> Discovered new store with id: " + rsid)
+    #             if rsid != self.__store.store_id and rsid not in self.__store.discovered_stores:
+    #                 self.__store.discovered_stores.append(rsid)
+    #                 self.advertise_presence()
+    #         elif i.is_disposed_instance():
+    #             rsid = d.key
+    #             self.logger.debug('DController',">>> Store {0} has been disposed".format(rsid))
+    #             if rsid in self.__store.discovered_stores:
+    #                 self.logger.debug('DController',">>> Removing Store id: " + rsid)
+    #                 self.__store.discovered_stores.remove(rsid)
 
 
 
@@ -375,6 +403,7 @@ class StoreController (AbstractController, Observer):
                     answers.append(d.source_sid)
                     if d.key == uri: # and d.dest_sid == self.__store.store_id:
                         values = values + d.kvave
+            retries = retries+1
 
 
 
@@ -468,8 +497,21 @@ class StoreController (AbstractController, Observer):
             return False
 
     def start(self):
-        self.logger.debug('DController',"Advertising Store with Id {0}".format(self.__store.store_id))
-        self.advertise_presence()
+        self.logger.debug('DController', "Advertising Store with Id {0}".format(self.__store.store_id))
+
+        import threading
+        threading.Thread(target=self.advertise_presence_timer, args=[5]).start()
+
+    def advertise_presence_timer(self, timer):
+        self.logger.debug('DController', "Advertising Store with Id {} every {}".format(self.__store.store_id, timer))
+        while True:
+            self.logger.debug('DController', "Advertising Store with Id {}".format(self.__store.store_id))
+            info = StoreInfo(sid=self.__store.store_id, sroot=self.__store.root, shome=self.__store.home)
+            self.store_info_writer.write(info)
+            time.sleep(timer)
+    # def start(self):
+    #     self.logger.debug('DController',"Advertising Store with Id {0}".format(self.__store.store_id))
+    #     self.advertise_presence()
 
     def advertise_presence(self):
         info = StoreInfo(sid=self.__store.store_id, sroot=self.__store.root, shome=self.__store.home)
