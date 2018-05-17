@@ -390,6 +390,11 @@ class StoreController (AbstractController, Observer):
             self.logger.debug('DController', ">>>>>>>>>>>>> Resolver starting loop #{} with peers: {} answers: {}".format(retries, len(peers), len(answers)))
             sleep(0.2)
             samples = list(self.hitmv_reader.take(DDS_ANY_STATE))
+            if retries > 0 and (retries % 10) == 0:
+                self.missmv_writer.write(m)
+                sleep(0.4)
+
+
             self.logger.debug('DController',">>>> Resolve loop #{} got {} samples -> {}".format(retries, len(samples), samples))
             for s in samples:
                 d = s[0]
@@ -403,9 +408,10 @@ class StoreController (AbstractController, Observer):
                     # Only remove if this was an answer for this key!
                     # if d.source_sid in peers and uri == d.key:
                     #     peers.remove(d.source_sid)
-                    answers.append(d.source_sid)
-                    if d.key == uri and d.kvave is not None: # and d.dest_sid == self.__store.store_id:
-                        values = values + d.kvave
+                    if d.source_sid not in answers:
+                        answers.append(d.source_sid)
+                        if d.key == uri and d.kvave is not None: # and d.dest_sid == self.__store.store_id:
+                            values = values + d.kvave
             self.logger.debug('DController', ">>>>>>>>>>>>> Resolver finishing loop #{} with peers: {} answers: {}".format(retries, len(peers), len(answers)))
             retries = retries+1
 
