@@ -179,7 +179,7 @@ class StoreController (AbstractController, Observer):
                     v = self.__store.get_value(d.key)
 
                 if v is not None:
-                    self.logger.debug('DController.handle_miss', 'Serving Miss for {0}'.format(d.key))
+                    self.logger.debug('DController.handle_miss', 'Serving Miss for {} with {} -> {}'.format(d.key,v[0],v[1]))
                     h = CacheHit(self.__store.store_id, d.source_sid, d.key, v[0], v[1])
                     self.hit_writer.write(h)
                 else:
@@ -473,11 +473,12 @@ class StoreController (AbstractController, Observer):
         v = (None, -1)
         #peers != [] and
         while retries < maxRetries:
+            time.sleep(timeout + max(retries - 1, 0) * delta)
         # while peers != answers:
         #     peers = copy.deepcopy(self.__store.discovered_stores)
             #sleep(0.2)
             samples = list(self.hitmv_reader.take(DDS_ANY_STATE))
-            time.sleep(timeout + max(retries-1, 0) * delta)
+
             self.logger.debug('DController', ">>>> Resolve loop #{} got {} samples -> {}".format(retries, len(samples), samples))
 
             # sn = 0
