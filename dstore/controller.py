@@ -386,7 +386,7 @@ class StoreController (AbstractController, Observer):
         peers_id = []
         answers = []
 
-        while peers != answers:
+        while len(peers) != len(answers):
             sleep(0.2)
             samples = list(self.hitmv_reader.take(DDS_ANY_STATE))
             self.logger.debug('DController',">>>> Resolve loop #{} got {} samples -> {}".format(retries, len(samples), samples))
@@ -403,7 +403,7 @@ class StoreController (AbstractController, Observer):
                     # if d.source_sid in peers and uri == d.key:
                     #     peers.remove(d.source_sid)
                     answers.append(d.source_sid)
-                    if d.key == uri: # and d.dest_sid == self.__store.store_id:
+                    if d.key == uri and d.kave is not None: # and d.dest_sid == self.__store.store_id:
                         values = values + d.kvave
             retries = retries+1
 
