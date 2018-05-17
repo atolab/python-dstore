@@ -403,7 +403,7 @@ class StoreController (AbstractController, Observer):
                     # if d.source_sid in peers and uri == d.key:
                     #     peers.remove(d.source_sid)
                     answers.append(d.source_sid)
-                    if d.key == uri and d.kave is not None: # and d.dest_sid == self.__store.store_id:
+                    if d.key == uri and d.kvave is not None: # and d.dest_sid == self.__store.store_id:
                         values = values + d.kvave
             retries = retries+1
 
