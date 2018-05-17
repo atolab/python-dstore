@@ -204,7 +204,6 @@ class StoreController (AbstractController, Observer):
                 else:
                     xs = self.__store.getAll(d.key)
 
-
                 self.logger.debug('DController','>>>> Serving Miss MV for key {} store: {} data: {}'.format(d.key, d.source_sid, xs))
                 h = CacheHitMV(self.__store.store_id, d.source_sid, d.key, xs)
                 self.hitmv_writer.write(h)
@@ -387,7 +386,7 @@ class StoreController (AbstractController, Observer):
         while peers != answers:
             sleep(0.2)
             samples = self.hitmv_reader.take(DDS_ANY_STATE)
-            self.logger.debug('DController',">>>> Resolve loop #{0} got {1} samples".format(retries, str(samples)))
+            self.logger.debug('DController',">>>> Resolve loop #{} got {} samples -> {}".format(retries, len(samples), samples))
             for s in samples:
                 d = s[0]
                 i = s[1]
