@@ -464,37 +464,36 @@ class StoreController (AbstractController, Observer):
         m = CacheMiss(self.__store.store_id, uri)
         self.miss_writer.write(m)
 
-        # peers = copy.deepcopy(self.__store.discovered_stores)
+        peers = copy.deepcopy(self.__store.discovered_stores)
         # answers = []
-        # self.logger.debug('DController',"Trying to resolve {0} with peers {1}".format(uri, peers))
-        # maxRetries = max(len(peers),  5)
+        self.logger.debug('DController',"Trying to resolve {0} with peers {1}".format(uri, peers))
+        maxRetries = max(len(peers),  10)
 
-        # retries = 0
+        retries = 0
         v = (None, -1)
         #peers != [] and
-        # while retries < maxRetries:
+        while retries < maxRetries:
         # while peers != answers:
         #     peers = copy.deepcopy(self.__store.discovered_stores)
-        sleep(0.2)
-        samples = list(self.hitmv_reader.take(DDS_ANY_STATE))
-            # time.sleep(timeout + max(retries-1, 0) * delta)
-            # self.logger.debug('DController',">>>> Resolve loop #{0} got {1}".format(retries, str(samples)))
+            #sleep(0.2)
+            samples = list(self.hitmv_reader.take(DDS_ANY_STATE))
+            time.sleep(timeout + max(retries-1, 0) * delta)
+            self.logger.debug('DController', ">>>> Resolve loop #{} got {} samples -> {}".format(retries, len(samples), samples))
 
             # sn = 0
 
-        for (d, i) in samples:
-            # sn += 1
-            if i.valid_data and d.key == uri:
-                self.logger.debug('DController',"Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
-                self.logger.debug('DController',"I was looking to resolve uri: {0}".format(uri))
-                    # # Only remove if this was an answer for this key!
-                    # if d.source_sid in peers and uri == d.key and d.dest_sid == self.__store.store_id:
-                    #     peers.remove(d.source_sid)
-
-
-                if d.key == uri and d.dest_sid == self.__store.store_id:
-                    if int(d.version) > int(v[1]):
-                        v = (d.value, d.version)
+            for (d, i) in samples:
+                # sn += 1
+                if i.valid_data and d.key == uri:
+                    self.logger.debug('DController',"Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
+                    self.logger.debug('DController',"I was looking to resolve uri: {0}".format(uri))
+                        # # Only remove if this was an answer for this key!
+                        # if d.source_sid in peers and uri == d.key and d.dest_sid == self.__store.store_id:
+                        #     peers.remove(d.source_sid)
+                    if d.key == uri and d.dest_sid == self.__store.store_id:
+                        if int(d.version) > int(v[1]):
+                            v = (d.value, d.version)
+            retries = retries + 1
 
 
         return v
