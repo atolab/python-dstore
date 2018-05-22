@@ -5,6 +5,7 @@ from cdds import *
 import copy
 import time
 from time import sleep
+import random
 
 the_dds_controller = None
 
@@ -178,7 +179,7 @@ class StoreController (AbstractController, Observer):
                     v = self.__store.get_value(d.key)
 
                 if v is not None:
-                    self.logger.debug('DController.handle_miss', 'Serving Miss for {0}'.format(d.key))
+                    self.logger.debug('DController.handle_miss', 'Serving Miss for {} with {} -> {}'.format(d.key,v[0],v[1]))
                     h = CacheHit(self.__store.store_id, d.source_sid, d.key, v[0], v[1])
                     self.hit_writer.write(h)
                 else:
@@ -204,9 +205,13 @@ class StoreController (AbstractController, Observer):
                 else:
                     xs = self.__store.getAll(d.key)
 
+                if len(xs) == 0:
+                    xs = None
 
-                self.logger.debug('DController','>>>> Serving Miss MV for key {0}'.format(d.key))
+                self.logger.debug('DController','>>>> Serving Miss MV for key {} store: {} data: {}'.format(d.key, d.source_sid, xs))
                 h = CacheHitMV(self.__store.store_id, d.source_sid, d.key, xs)
+                r_sleep = random.randint(1, 75)/100
+                time.sleep(r_sleep)
                 self.hitmv_writer.write(h)
 
 
@@ -254,25 +259,53 @@ class StoreController (AbstractController, Observer):
             else:
                 self.logger.debug('DController',">>>>>> Some store unregistered instance {0}".format(d.key))
 
-
-
-    def cache_discovered(self,reader):
-        self.logger.debug('DController','New Cache discovered, current view = {0}'.format(self.__store.discovered_stores))
+    def cache_discovered(self, reader):
+        self.logger.debug('DController', 'New Cache discovered, current view = {0}'.format(self.__store.discovered_stores))
         samples = reader.take(DDS_ANY_SAMPLE_STATE)
+        t_now = time.time()
 
         for (d, i) in samples:
             if i.valid_data:
                 rsid = d.sid
-                self.logger.debug('DController',">>> Discovered new store with id: " + rsid)
-                if rsid != self.__store.store_id and rsid not in self.__store.discovered_stores:
-                    self.__store.discovered_stores.append(rsid)
-                    self.advertise_presence()
+                self.logger.debug('DController', ">>> Discovered store with id: " + rsid)
+                if rsid != self.__store.store_id:
+                    if rsid not in self.__store.discovered_stores.keys():
+                        self.logger.debug('DController', ">>> Store with id: {} is new!".format(rsid))
+                        self.__store.discovered_stores.update({rsid: time.time()})
+                        self.advertise_presence()
+                    elif rsid in self.__store.discovered_stores.keys():
+                        t_old = self.__store.discovered_stores.get(rsid)
+                        self.logger.debug('DController', ">>> Store with id: {} is old t_old-t_now={}!".format(rsid, t_now - t_old))
+                        if t_now - t_old > 7:
+                            self.advertise_presence()
+                            self.logger.debug('DController', ">>> Responding to advertising at store id: {}".format(rsid))
+
+                        self.__store.discovered_stores.update({rsid: time.time()})
+
             elif i.is_disposed_instance():
                 rsid = d.key
-                self.logger.debug('DController',">>> Store {0} has been disposed".format(rsid))
+                self.logger.debug('DController', ">>> Store {0} has been disposed".format(rsid))
                 if rsid in self.__store.discovered_stores:
-                    self.logger.debug('DController',">>> Removing Store id: " + rsid)
-                    self.__store.discovered_stores.remove(rsid)
+                    self.logger.debug('DController', ">>> Removing Store id: " + rsid)
+                    self.__store.discovered_stores.pop(rsid)
+
+    # def cache_discovered(self,reader):
+    #     self.logger.debug('DController','New Cache discovered, current view = {0}'.format(self.__store.discovered_stores))
+    #     samples = reader.take(DDS_ANY_SAMPLE_STATE)
+    #
+    #     for (d, i) in samples:
+    #         if i.valid_data:
+    #             rsid = d.sid
+    #             self.logger.debug('DController',">>> Discovered new store with id: " + rsid)
+    #             if rsid != self.__store.store_id and rsid not in self.__store.discovered_stores:
+    #                 self.__store.discovered_stores.append(rsid)
+    #                 self.advertise_presence()
+    #         elif i.is_disposed_instance():
+    #             rsid = d.key
+    #             self.logger.debug('DController',">>> Store {0} has been disposed".format(rsid))
+    #             if rsid in self.__store.discovered_stores:
+    #                 self.logger.debug('DController',">>> Removing Store id: " + rsid)
+    #                 self.__store.discovered_stores.remove(rsid)
 
 
 
@@ -345,21 +378,46 @@ class StoreController (AbstractController, Observer):
         if timeout is None:
             timeout = delta
 
+        flag = False
+        peers = copy.deepcopy(self.__store.discovered_stores)
+        count = 0
+        while not flag and count < 10:
+            if len(peers) == 0:
+                time.sleep(0.01)
+                peers = copy.deepcopy(self.__store.discovered_stores)
+            else:
+                flag = True
+            count = count + 1
+
+
         m = CacheMissMV(self.__store.store_id, uri)
         self.missmv_writer.write(m)
 
 
-        # maxRetries = max(min(len(peers), 3),  3)
+
         retries = 0
         values = []
-        peers = copy.deepcopy(self.__store.discovered_stores)
+
+        maxRetries = max(min(len(peers)*5, 10),  50)
         peers_id = []
         answers = []
+        flag = False
 
-        while peers != answers:
+        while not flag:
+            self.logger.debug('DController', ">>>>>>>>>>>>> Resolver starting loop #{} with peers: {} answers: {}".format(retries, len(peers), len(answers)))
             sleep(0.2)
-            samples = self.hitmv_reader.take(DDS_ANY_STATE)
-            self.logger.debug('DController',">>>> Resolve loop #{0} got {1} samples".format(retries, str(samples)))
+            samples = list(self.hitmv_reader.take(DDS_ANY_STATE))
+            if retries > 0 and (retries % 10) == 0:
+                self.logger.debug('DController',">>>> Resolve loop #{} sending another miss!!".format(retries))
+                self.missmv_writer.write(m)
+                sleep(0.4)
+            if retries > maxRetries:
+                self.logger.debug('DController',">>>> Reached max retries giving up!")
+                flag = True
+
+
+
+            self.logger.debug('DController',">>>> Resolve loop #{} got {} samples -> {}".format(retries, len(samples), samples))
             for s in samples:
                 d = s[0]
                 i = s[1]
@@ -372,9 +430,21 @@ class StoreController (AbstractController, Observer):
                     # Only remove if this was an answer for this key!
                     # if d.source_sid in peers and uri == d.key:
                     #     peers.remove(d.source_sid)
-                    answers.append(d.source_sid)
-                    if d.key == uri: # and d.dest_sid == self.__store.store_id:
-                        values = values + d.kvave
+                    if d.source_sid not in answers:
+                        self.logger.debug('DController', "New answer from {}".format(d.source_sid))
+                        answers.append(d.source_sid)
+                        if d.key == uri and d.kvave is not None: # and d.dest_sid == self.__store.store_id:
+                            values = values + d.kvave
+                    else:
+                        self.logger.debug('DController', "Already got an answer from {}".format(d.source_sid))
+
+            if len(peers) == len(answers):
+                self.logger.debug('DController',">>>> All peers answered!")
+                flag = True
+
+
+            self.logger.debug('DController', ">>>>>>>>>>>>> Resolver finishing loop #{} with peers: {} answers: {}".format(retries, len(peers), len(answers)))
+            retries = retries+1
 
 
 
@@ -419,37 +489,37 @@ class StoreController (AbstractController, Observer):
         m = CacheMiss(self.__store.store_id, uri)
         self.miss_writer.write(m)
 
-        # peers = copy.deepcopy(self.__store.discovered_stores)
+        peers = copy.deepcopy(self.__store.discovered_stores)
         # answers = []
-        # self.logger.debug('DController',"Trying to resolve {0} with peers {1}".format(uri, peers))
-        # maxRetries = max(len(peers),  5)
+        self.logger.debug('DController',"Trying to resolve {0} with peers {1}".format(uri, peers))
+        maxRetries = max(len(peers),  10)
 
-        # retries = 0
+        retries = 0
         v = (None, -1)
         #peers != [] and
-        # while retries < maxRetries:
+        while retries < maxRetries:
+            time.sleep(timeout + max(retries - 1, 0) * delta)
         # while peers != answers:
         #     peers = copy.deepcopy(self.__store.discovered_stores)
-        sleep(0.2)
-        samples = self.hit_reader.take(DDS_ANY_STATE)
-            # time.sleep(timeout + max(retries-1, 0) * delta)
-            # self.logger.debug('DController',">>>> Resolve loop #{0} got {1}".format(retries, str(samples)))
+            #sleep(0.2)
+            samples = list(self.hit_reader.take(DDS_ANY_STATE))
+
+            self.logger.debug('DController', ">>>> Resolve loop #{} got {} samples -> {}".format(retries, len(samples), samples))
 
             # sn = 0
 
-        for (d, i) in samples:
-            # sn += 1
-            if i.valid_data and d.key == uri:
-                self.logger.debug('DController',"Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
-                self.logger.debug('DController',"I was looking to resolve uri: {0}".format(uri))
-                    # # Only remove if this was an answer for this key!
-                    # if d.source_sid in peers and uri == d.key and d.dest_sid == self.__store.store_id:
-                    #     peers.remove(d.source_sid)
-
-
-                if d.key == uri and d.dest_sid == self.__store.store_id:
-                    if int(d.version) > int(v[1]):
-                        v = (d.value, d.version)
+            for (d, i) in samples:
+                # sn += 1
+                if i.valid_data and d.key == uri:
+                    self.logger.debug('DController',"Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
+                    self.logger.debug('DController',"I was looking to resolve uri: {0}".format(uri))
+                        # # Only remove if this was an answer for this key!
+                        # if d.source_sid in peers and uri == d.key and d.dest_sid == self.__store.store_id:
+                        #     peers.remove(d.source_sid)
+                    if d.key == uri and d.dest_sid == self.__store.store_id:
+                        if int(d.version) > int(v[1]):
+                            v = (d.value, d.version)
+            retries = retries + 1
 
 
         return v
@@ -468,8 +538,24 @@ class StoreController (AbstractController, Observer):
             return False
 
     def start(self):
-        self.logger.debug('DController',"Advertising Store with Id {0}".format(self.__store.store_id))
-        self.advertise_presence()
+        time.sleep(0.5)
+        self.logger.debug('DController', "Advertising Store with Id {0}".format(self.__store.store_id))
+
+        import threading
+        th = threading.Thread(target=self.advertise_presence_timer, args=[5])
+        th.setDaemon(True)
+        th.start()
+
+    def advertise_presence_timer(self, timer):
+        self.logger.debug('DController', "Advertising Store with Id {} every {}".format(self.__store.store_id, timer))
+        while True:
+            self.logger.debug('DController', "Advertising Store with Id {}".format(self.__store.store_id))
+            info = StoreInfo(sid=self.__store.store_id, sroot=self.__store.root, shome=self.__store.home)
+            self.store_info_writer.write(info)
+            time.sleep(timer)
+    # def start(self):
+    #     self.logger.debug('DController',"Advertising Store with Id {0}".format(self.__store.store_id))
+    #     self.advertise_presence()
 
     def advertise_presence(self):
         info = StoreInfo(sid=self.__store.store_id, sroot=self.__store.root, shome=self.__store.home)
@@ -495,5 +581,3 @@ class StoreController (AbstractController, Observer):
         info = StoreInfo(sid=self.__store.store_id, sroot=self.__store.root, shome=self.__store.home)
         self.store_info_writer.dispose_instance(info)
         DDSController.controller().close()
-
-
