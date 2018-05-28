@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
     name='dstore',
-    version='0.1.0',
+    version='0.1.1',
     packages=['dstore', ],
     author='kydos',
     url='https://github.com/atolab/dstore-python',
