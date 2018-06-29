@@ -398,7 +398,7 @@ class StoreController (AbstractController, Observer):
         retries = 0
         values = []
 
-        maxRetries = max(min(len(peers)*5, 10),  50)
+        maxRetries = max(min(len(peers)*5, 10),  20)
         peers_id = []
         answers = []
         flag = False
@@ -520,7 +520,6 @@ class StoreController (AbstractController, Observer):
                         if int(d.version) > int(v[1]):
                             v = (d.value, d.version)
             retries = retries + 1
-
 
         return v
         # if v[0] is not None:
