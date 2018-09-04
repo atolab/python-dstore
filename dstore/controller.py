@@ -311,9 +311,6 @@ class StoreController (AbstractController, Observer):
     #                 self.logger.debug('DController',">>> Removing Store id: " + rsid)
     #                 self.__store.discovered_stores.remove(rsid)
 
-
-
-
     def cache_disappeared(self, reader, status):
         self.logger.debug('DController',">>> Cache Lifecycle-Change")
         self.logger.debug('DController','Current Stores view = {0}'.format(self.__store.discovered_stores))
@@ -331,13 +328,11 @@ class StoreController (AbstractController, Observer):
                         self.logger.debug('DController',">>> Store with id {0} has disappeared, but for some reason we did not know it...")
             self.lock.release()
 
-
     def onPut(self, uri, val, ver):
         # self.logger.debug('DController',">> uri: " + uri)
         # self.logger.debug('DController',">> val: " + val)
         v = KeyValue(key = uri , value = val, sid = self.__store.store_id, version = ver)
         self.key_value_writer.write(v)
-
 
     # One of these for each operation on the cache...
     def onPput(self, uri, val, ver):
@@ -347,7 +342,6 @@ class StoreController (AbstractController, Observer):
     def onDput(self, uri, val, ver):
         v = KeyValue(key = uri , value = val, sid = self.__store.store_id, version = ver)
         self.key_value_writer.write(v)
-
 
     def onGet(self, uri):
         pass
@@ -556,7 +550,7 @@ class StoreController (AbstractController, Observer):
             self.store_info_writer.write(info)
             self.lock.acquire()
             for k in self.__store.discovered_stores:
-                if self.__store.discovered_stores.get(k) > 3:
+                if self.__store.discovered_stores.get(k) > 7:
                     self.__store.discovered_stores.pop(k)
             self.lock.release()
             time.sleep(timer)
