@@ -494,7 +494,7 @@ class StoreController (AbstractController, Observer):
         peers = copy.deepcopy(self.__store.discovered_stores)
         # answers = []
         self.logger.debug('DController',"Trying to resolve {0} with peers {1}".format(uri, peers))
-        maxRetries = max(min(len(peers),  10), 50)
+        maxRetries = min(len(peers),  10)
 
         retries = 0
         v = (None, -1)
