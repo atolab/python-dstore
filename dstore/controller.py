@@ -382,7 +382,7 @@ class StoreController (AbstractController, Observer):
         # @TODO: This should be in the config...
         #delta = 0.010
         time.sleep(0.450)
-        delta = 0.250
+        delta = 0.010
         if timeout is None:
             timeout = delta
 
@@ -406,7 +406,7 @@ class StoreController (AbstractController, Observer):
 
         retries = 0
         values = []
-        max_retries = max(min(len(peers)*5, 10), 50)
+        max_retries = max(min(len(peers)*5, 10), 25)
         peers_id = []
         answers = []
         flag = False
