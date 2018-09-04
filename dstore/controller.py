@@ -418,9 +418,9 @@ class StoreController (AbstractController, Observer):
             if retries > 0 and (retries % 10) == 0:
                 self.logger.debug('DController', ">>>> Resolve loop #{} sending another miss!!".format(retries))
                 self.missmv_writer.write(m)
-            if retries > max_retries:
-                self.logger.debug('DController', ">>>> Reached max retries giving up!")
-                flag = True
+            # if retries > max_retries:
+            #     self.logger.debug('DController', ">>>> Reached max retries giving up!")
+            #     flag = True
 
             self.logger.debug('DController', ">>>> Resolve loop #{} got {} samples -> {}".format(retries, len(samples), samples))
             for s in samples:
