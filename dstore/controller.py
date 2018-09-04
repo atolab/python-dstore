@@ -364,9 +364,9 @@ class StoreController (AbstractController, Observer):
         # self.logger.debug('DController',"onConflict Not yet...")
 
     def resolveAll(self, uri, timeout = None):
-        self.logger.info('DController','>>>> Handling {0} Miss MV for store {1}'.format(uri, self.__store.store_id))
+        self.logger.info('DController', '>>>> Handling {0} Miss MV for store {1}'.format(uri, self.__store.store_id))
 
-        self.logger.info('DController',">> Trying to resolve {}".format(uri))
+        self.logger.info('DController', ">> Trying to resolve {}".format(uri))
         """
             Tries to resolve this URI (with wildcards) across the distributed caches
             :param uri: the URI to be resolved
@@ -374,6 +374,7 @@ class StoreController (AbstractController, Observer):
         """
         # @TODO: This should be in the config...
         #delta = 0.010
+        time.sleep(0.450)
         delta = 0.250
         if timeout is None:
             timeout = delta
@@ -480,6 +481,7 @@ class StoreController (AbstractController, Observer):
         """
 
         # @TODO: This should be in the config...
+        time.sleep(0.450)
         #delta = 0.250
         delta = 0.250
         if timeout is None:
@@ -541,7 +543,7 @@ class StoreController (AbstractController, Observer):
         self.logger.debug('DController', "Advertising Store with Id {0}".format(self.__store.store_id))
 
         import threading
-        th = threading.Thread(target=self.advertise_presence_timer, args=[5])
+        th = threading.Thread(target=self.advertise_presence_timer, args=[1])
         th.setDaemon(True)
         th.start()
 
