@@ -266,7 +266,7 @@ class StoreController (AbstractController, Observer):
         t_now = time.time()
 
         for (d, i) in samples:
-            self.lock.acquire()
+
             if i.valid_data:
 
                 rsid = d.sid
@@ -274,7 +274,9 @@ class StoreController (AbstractController, Observer):
                 if rsid != self.__store.store_id:
                     if rsid not in self.__store.discovered_stores.keys():
                         self.logger.debug('DController', ">>> Store with id: {} is new!".format(rsid))
+                        self.lock.acquire()
                         self.__store.discovered_stores.update({rsid: time.time()})
+                        self.lock.release()
                         self.advertise_presence()
                     elif rsid in self.__store.discovered_stores.keys():
                         t_old = self.__store.discovered_stores.get(rsid)
@@ -283,7 +285,9 @@ class StoreController (AbstractController, Observer):
                             self.advertise_presence()
                             self.logger.debug('DController', ">>> Responding to advertising at store id: {}".format(rsid))
 
+                        self.lock.acquire()
                         self.__store.discovered_stores.update({rsid: time.time()})
+                        self.lock.release()
 
             elif i.is_disposed_instance():
                 rsid = d.key
@@ -291,7 +295,7 @@ class StoreController (AbstractController, Observer):
                 if rsid in self.__store.discovered_stores:
                     self.logger.debug('DController', ">>> Removing Store id: " + rsid)
                     self.__store.discovered_stores.pop(rsid)
-            self.lock.release()
+
 
     # def cache_discovered(self,reader):
     #     self.logger.debug('DController','New Cache discovered, current view = {0}'.format(self.__store.discovered_stores))
@@ -316,17 +320,18 @@ class StoreController (AbstractController, Observer):
         self.logger.debug('DController','Current Stores view = {0}'.format(self.__store.discovered_stores))
         samples = reader.take(DDS_NOT_ALIVE_NO_WRITERS_INSTANCE_STATE | DDS_NOT_ALIVE_DISPOSED_INSTANCE_STATE)
         for (d, i) in samples:
-            self.lock.acquire()
+
             if i.valid_data:
                 rsid = d.sid
                 if rsid != self.__store.store_id:
+                    self.lock.acquire()
                     if rsid in self.__store.discovered_stores:
 
                         self.__store.discovered_stores.remove(rsid)
                         self.logger.debug('DController',">>> Store with id {0} has disappeared".format(rsid))
                     else:
                         self.logger.debug('DController',">>> Store with id {0} has disappeared, but for some reason we did not know it...")
-            self.lock.release()
+                    self.lock.release()
 
     def onPut(self, uri, val, ver):
         # self.logger.debug('DController',">> uri: " + uri)
@@ -389,7 +394,7 @@ class StoreController (AbstractController, Observer):
             if len(peers) == 0:
                 time.sleep(0.01)
                 self.lock.acquire()
-                peers = copy.deepcopy(self.__store.discovered_stores)
+                peers = [k for k, _ in copy.deepcopy(self.__store.discovered_stores)]
                 self.lock.release()
             else:
                 flag = True
@@ -400,36 +405,31 @@ class StoreController (AbstractController, Observer):
 
         retries = 0
         values = []
-        max_retries = max(min(len(peers)*5, 10), 25)
+        max_retries = max(min(len(peers)*5, 10), 20)
         peers_id = []
         answers = []
         flag = False
 
         while not flag:
             self.logger.debug('DController', ">>>>>>>>>>>>> Resolver starting loop #{} with peers: {} answers: {}".format(retries, len(peers), len(answers)))
-            sleep(0.2)
             samples = list(self.hitmv_reader.take(DDS_ANY_STATE))
             if retries > 0 and (retries % 10) == 0:
                 self.logger.debug('DController', ">>>> Resolve loop #{} sending another miss!!".format(retries))
                 self.missmv_writer.write(m)
-                sleep(0.4)
             if retries > max_retries:
-                self.logger.debug('DController',">>>> Reached max retries giving up!")
+                self.logger.debug('DController', ">>>> Reached max retries giving up!")
                 flag = True
 
-            self.logger.debug('DController',">>>> Resolve loop #{} got {} samples -> {}".format(retries, len(samples), samples))
+            self.logger.debug('DController', ">>>> Resolve loop #{} got {} samples -> {}".format(retries, len(samples), samples))
             for s in samples:
                 d = s[0]
                 i = s[1]
-                self.logger.debug('DController',"Is valid data: {0}".format(i.valid_data))
-                self.logger.debug('DController',"Key: {0}".format(d.key))
+                self.logger.debug('DController', "Is valid data: {0}".format(i.valid_data))
+                self.logger.debug('DController', "Key: {0}".format(d.key))
                 if i.valid_data:
-                    self.logger.debug('DController',"Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
-                    self.logger.debug('DController',"I was looking to resolve uri: {0}".format(uri))
+                    self.logger.debug('DController', "Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
+                    self.logger.debug('DController', "I was looking to resolve uri: {0}".format(uri))
                     self.logger.debug('DController','>>>>>>>>> VALUE {0} KVAVE {1}'.format(values, d.kvave))
-                    # Only remove if this was an answer for this key!
-                    # if d.source_sid in peers and uri == d.key:
-                    #     peers.remove(d.source_sid)
                     if d.source_sid not in answers:
                         self.logger.debug('DController', "New answer from {}".format(d.source_sid))
                         answers.append(d.source_sid)
@@ -440,9 +440,8 @@ class StoreController (AbstractController, Observer):
                         self.logger.debug('DController', "Already got an answer from {}".format(d.source_sid))
 
             if set(peers) == set(answers):
-                self.logger.debug('DController',">>>> All peers answered!")
+                self.logger.debug('DController', ">>>> All peers answered!")
                 flag = True
-
 
             self.logger.debug('DController', ">>>>>>>>>>>>> Resolver finishing loop #{} with peers: {} answers: {}".format(retries, len(peers), len(answers)))
             retries = retries+1
