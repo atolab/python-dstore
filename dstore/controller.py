@@ -6,7 +6,7 @@ import copy
 import time
 from time import sleep
 import random
-
+from threading import Lock
 the_dds_controller = None
 
 
@@ -61,6 +61,7 @@ class DDSController:
     def close(self):
         self.dds_runtime.close()
 
+
 class StoreController (AbstractController, Observer):
     MAX_SAMPLES = 64
     DISPOSED_INSTANCE = 32
@@ -70,7 +71,7 @@ class StoreController (AbstractController, Observer):
         self.dds_controller = DDSController.controller()
         self.logger = DLogger()
         self.__store = store
-
+        self.lock = Lock()
         self.dp = self.dds_controller.dp
 
         self.pub = self.dds_controller.get_pub(self.__store.root)
@@ -265,7 +266,9 @@ class StoreController (AbstractController, Observer):
         t_now = time.time()
 
         for (d, i) in samples:
+            self.lock.acquire()
             if i.valid_data:
+
                 rsid = d.sid
                 self.logger.debug('DController', ">>> Discovered store with id: " + rsid)
                 if rsid != self.__store.store_id:
@@ -288,6 +291,7 @@ class StoreController (AbstractController, Observer):
                 if rsid in self.__store.discovered_stores:
                     self.logger.debug('DController', ">>> Removing Store id: " + rsid)
                     self.__store.discovered_stores.pop(rsid)
+            self.lock.release()
 
     # def cache_discovered(self,reader):
     #     self.logger.debug('DController','New Cache discovered, current view = {0}'.format(self.__store.discovered_stores))
@@ -315,14 +319,17 @@ class StoreController (AbstractController, Observer):
         self.logger.debug('DController','Current Stores view = {0}'.format(self.__store.discovered_stores))
         samples = reader.take(DDS_NOT_ALIVE_NO_WRITERS_INSTANCE_STATE | DDS_NOT_ALIVE_DISPOSED_INSTANCE_STATE)
         for (d, i) in samples:
+            self.lock.acquire()
             if i.valid_data:
                 rsid = d.sid
                 if rsid != self.__store.store_id:
                     if rsid in self.__store.discovered_stores:
+
                         self.__store.discovered_stores.remove(rsid)
                         self.logger.debug('DController',">>> Store with id {0} has disappeared".format(rsid))
                     else:
                         self.logger.debug('DController',">>> Store with id {0} has disappeared, but for some reason we did not know it...")
+            self.lock.release()
 
 
     def onPut(self, uri, val, ver):
@@ -380,12 +387,16 @@ class StoreController (AbstractController, Observer):
             timeout = delta
 
         flag = False
+        self.lock.acquire()
         peers = [k for k, _ in copy.deepcopy(self.__store.discovered_stores)]
+        self.lock.release()
         count = 0
         while not flag and count < 10:
             if len(peers) == 0:
                 time.sleep(0.01)
+                self.lock.acquire()
                 peers = copy.deepcopy(self.__store.discovered_stores)
+                self.lock.release()
             else:
                 flag = True
             count = count + 1
@@ -451,8 +462,6 @@ class StoreController (AbstractController, Observer):
 
         filtered_values = {}
 
-
-
         for (k, va, ve) in values:
             if k not in filtered_values:
                 filtered_values.update({k: (k ,va ,ve)})
@@ -484,7 +493,9 @@ class StoreController (AbstractController, Observer):
         m = CacheMiss(self.__store.store_id, uri)
         self.miss_writer.write(m)
 
+        self.lock.acquire()
         peers = [k for k, _ in copy.deepcopy(self.__store.discovered_stores)]
+        self.lock.release()
         answers = []
         self.logger.debug('DController', "Trying to resolve {0} with peers {1}".format(uri, peers))
         max_retries = max(len(peers)*2,  10)
@@ -494,7 +505,9 @@ class StoreController (AbstractController, Observer):
         while peers != [] and retries < max_retries:
             time.sleep(timeout + max(retries - 1, 0)/10 * delta)
             while set(peers) != set(answers):
+                self.lock.acquire()
                 peers = [k for k, _ in copy.deepcopy(self.__store.discovered_stores)]
+                self.lock.release()
                 sleep(delta)
                 samples = list(self.hit_reader.take(DDS_ANY_STATE))
 
@@ -541,6 +554,11 @@ class StoreController (AbstractController, Observer):
             self.logger.debug('DController', "Advertising Store with Id {}".format(self.__store.store_id))
             info = StoreInfo(sid=self.__store.store_id, sroot=self.__store.root, shome=self.__store.home)
             self.store_info_writer.write(info)
+            self.lock.acquire()
+            for k in self.__store.discovered_stores:
+                if self.__store.discovered_stores.get(k) > 3:
+                    self.__store.discovered_stores.pop(k)
+            self.lock.release()
             time.sleep(timer)
     # def start(self):
     #     self.logger.debug('DController',"Advertising Store with Id {0}".format(self.__store.store_id))
