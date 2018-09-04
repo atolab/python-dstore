@@ -396,7 +396,7 @@ class StoreController (AbstractController, Observer):
             if len(peers) == 0:
                 time.sleep(0.01)
                 self.lock.acquire()
-                peers = copy.deepcopy(self.__store.discovered_stores.keys())
+                peers = copy.deepcopy(self.__store.discovered_stores).keys()
                 self.lock.release()
             else:
                 flag = True
@@ -489,7 +489,7 @@ class StoreController (AbstractController, Observer):
         self.miss_writer.write(m)
 
         self.lock.acquire()
-        peers = copy.deepcopy(self.__store.discovered_stores.keys())
+        peers = copy.deepcopy(self.__store.discovered_stores).keys()
         self.lock.release()
         answers = []
         self.logger.debug('DController', "Trying to resolve {0} with peers {1}".format(uri, peers))
@@ -501,7 +501,7 @@ class StoreController (AbstractController, Observer):
             time.sleep(timeout + max(retries - 1, 0)/10 * delta)
             while set(peers) != set(answers):
                 self.lock.acquire()
-                peers = copy.deepcopy(self.__store.discovered_stores.keys())
+                peers = copy.deepcopy(self.__store.discovered_stores).keys()
                 self.lock.release()
                 sleep(delta)
                 samples = list(self.hit_reader.take(DDS_ANY_STATE))
@@ -527,7 +527,6 @@ class StoreController (AbstractController, Observer):
         #     # retries += 1
         #
         # return v
-
 
     def __is_metaresource(self, uri):
             u = uri.split('/')[-1]
