@@ -279,7 +279,7 @@ class StoreController (AbstractController, Observer):
                     elif rsid in self.__store.discovered_stores.keys():
                         t_old = self.__store.discovered_stores.get(rsid)
                         self.logger.debug('DController', ">>> Store with id: {} is old t_old-t_now={}!".format(rsid, t_now - t_old))
-                        if t_now - t_old > 2.5:
+                        if t_now - t_old > 4:
                             self.advertise_presence()
                             self.logger.debug('DController', ">>> Responding to advertising at store id: {}".format(rsid))
 
@@ -538,7 +538,7 @@ class StoreController (AbstractController, Observer):
         self.logger.debug('DController', "Advertising Store with Id {0}".format(self.__store.store_id))
 
         import threading
-        th = threading.Thread(target=self.advertise_presence_timer, args=[0.5])
+        th = threading.Thread(target=self.advertise_presence_timer, args=[3.5])
         th.setDaemon(True)
         th.start()
 
@@ -553,7 +553,7 @@ class StoreController (AbstractController, Observer):
                 if self.__store.discovered_stores.get(k) > 7:
                     self.__store.discovered_stores.pop(k)
             self.lock.release()
-            time.sleep(timer)
+            time.sleep(timer+1)
     # def start(self):
     #     self.logger.debug('DController',"Advertising Store with Id {0}".format(self.__store.store_id))
     #     self.advertise_presence()
