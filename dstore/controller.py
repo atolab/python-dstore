@@ -485,13 +485,13 @@ class StoreController (AbstractController, Observer):
         if timeout is None:
             timeout = delta
 
-        m = CacheMiss(self.__store.store_id, uri)
-        self.miss_writer.write(m)
+
 
         self.lock.acquire()
         peers = copy.deepcopy(self.__store.discovered_stores).keys()
         self.lock.release()
         flag = False
+        count = 0
         while not flag and count < 10:
             if len(peers) == 0:
                 time.sleep(0.01)
@@ -509,16 +509,26 @@ class StoreController (AbstractController, Observer):
         retries = 0
         v = (None, -1)
         flag = True
+
         #peers != [] and retries < max_retries
+
+        m = CacheMiss(self.__store.store_id, uri)
+        self.miss_writer.write(m)
+
         while flag:
             time.sleep(timeout + max(retries - 1, 0)/10 * delta)
             if set(peers) != set(answers):
                 flag = False
+
+            if retries > 0 and (retries % 10) == 0:
+                self.logger.debug('DController', ">>>> Resolve loop #{} sending another miss!!".format(retries))
+                self.miss_writer.write(m)
+
             # while set(peers) != set(answers):
             # self.lock.acquire()
             # peers = copy.deepcopy(self.__store.discovered_stores).keys()
             # self.lock.release()
-            sleep(delta)
+            #sleep(delta)
             samples = list(self.hit_reader.take(DDS_ANY_STATE))
             
             self.logger.debug('DController', ">>>> Resolve loop #{} got {} samples -> {}".format(retries, len(samples), samples))
