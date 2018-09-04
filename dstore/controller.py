@@ -383,7 +383,7 @@ class StoreController (AbstractController, Observer):
         # @TODO: This should be in the config...
         #delta = 0.010
         time.sleep(0.450)
-        delta = 0.010
+        delta = 0.100
         if timeout is None:
             timeout = delta
 
