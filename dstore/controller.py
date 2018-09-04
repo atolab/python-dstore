@@ -389,14 +389,14 @@ class StoreController (AbstractController, Observer):
 
         flag = False
         self.lock.acquire()
-        peers = [k for k, _ in copy.deepcopy(self.__store.discovered_stores)]
+        peers = copy.deepcopy(self.__store.discovered_stores.keys())
         self.lock.release()
         count = 0
         while not flag and count < 10:
             if len(peers) == 0:
                 time.sleep(0.01)
                 self.lock.acquire()
-                peers = [k for k, _ in copy.deepcopy(self.__store.discovered_stores)]
+                peers = copy.deepcopy(self.__store.discovered_stores.keys())
                 self.lock.release()
             else:
                 flag = True
@@ -489,7 +489,7 @@ class StoreController (AbstractController, Observer):
         self.miss_writer.write(m)
 
         self.lock.acquire()
-        peers = [k for k, _ in copy.deepcopy(self.__store.discovered_stores)]
+        peers = copy.deepcopy(self.__store.discovered_stores.keys())
         self.lock.release()
         answers = []
         self.logger.debug('DController', "Trying to resolve {0} with peers {1}".format(uri, peers))
@@ -501,7 +501,7 @@ class StoreController (AbstractController, Observer):
             time.sleep(timeout + max(retries - 1, 0)/10 * delta)
             while set(peers) != set(answers):
                 self.lock.acquire()
-                peers = [k for k, _ in copy.deepcopy(self.__store.discovered_stores)]
+                peers = copy.deepcopy(self.__store.discovered_stores.keys())
                 self.lock.release()
                 sleep(delta)
                 samples = list(self.hit_reader.take(DDS_ANY_STATE))
@@ -550,10 +550,13 @@ class StoreController (AbstractController, Observer):
             info = StoreInfo(sid=self.__store.store_id, sroot=self.__store.root, shome=self.__store.home)
             self.store_info_writer.write(info)
             self.lock.acquire()
-            for k in self.__store.discovered_stores:
-                if self.__store.discovered_stores.get(k) > 7:
-                    self.__store.discovered_stores.pop(k)
+            sd = copy.deepcopy(self.__store.discovered_stores)
             self.lock.release()
+            for k in sd:
+                if sd.get(k) > 7:
+                    self.lock.acquire()
+                    self.__store.discovered_stores.pop(k)
+                    self.lock.release()
             time.sleep(timer+1)
     # def start(self):
     #     self.logger.debug('DController',"Advertising Store with Id {0}".format(self.__store.store_id))
