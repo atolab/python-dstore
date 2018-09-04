@@ -363,7 +363,7 @@ class StoreController (AbstractController, Observer):
         pass
         # self.logger.debug('DController',"onConflict Not yet...")
 
-    def resolveAll(self, uri, timeout = None):
+    def resolveAll(self, uri, timeout=None):
         self.logger.info('DController', '>>>> Handling {0} Miss MV for store {1}'.format(uri, self.__store.store_id))
 
         self.logger.info('DController', ">> Trying to resolve {}".format(uri))
@@ -380,7 +380,7 @@ class StoreController (AbstractController, Observer):
             timeout = delta
 
         flag = False
-        peers = copy.deepcopy(self.__store.discovered_stores)
+        peers = [k for k, _ in copy.deepcopy(self.__store.discovered_stores)]
         count = 0
         while not flag and count < 10:
             if len(peers) == 0:
@@ -390,16 +390,12 @@ class StoreController (AbstractController, Observer):
                 flag = True
             count = count + 1
 
-
         m = CacheMissMV(self.__store.store_id, uri)
         self.missmv_writer.write(m)
 
-
-
         retries = 0
         values = []
-
-        maxRetries = max(min(len(peers)*5, 10), 50)
+        max_retries = max(min(len(peers)*5, 10), 50)
         peers_id = []
         answers = []
         flag = False
@@ -409,14 +405,12 @@ class StoreController (AbstractController, Observer):
             sleep(0.2)
             samples = list(self.hitmv_reader.take(DDS_ANY_STATE))
             if retries > 0 and (retries % 10) == 0:
-                self.logger.debug('DController',">>>> Resolve loop #{} sending another miss!!".format(retries))
+                self.logger.debug('DController', ">>>> Resolve loop #{} sending another miss!!".format(retries))
                 self.missmv_writer.write(m)
                 sleep(0.4)
-            if retries > maxRetries:
+            if retries > max_retries:
                 self.logger.debug('DController',">>>> Reached max retries giving up!")
                 flag = True
-
-
 
             self.logger.debug('DController',">>>> Resolve loop #{} got {} samples -> {}".format(retries, len(samples), samples))
             for s in samples:
@@ -436,10 +430,11 @@ class StoreController (AbstractController, Observer):
                         answers.append(d.source_sid)
                         if d.key == uri and d.kvave is not None: # and d.dest_sid == self.__store.store_id:
                             values = values + d.kvave
+
                     else:
                         self.logger.debug('DController', "Already got an answer from {}".format(d.source_sid))
 
-            if len(peers) == len(answers):
+            if set(peers) == set(answers):
                 self.logger.debug('DController',">>>> All peers answered!")
                 flag = True
 
@@ -482,46 +477,40 @@ class StoreController (AbstractController, Observer):
 
         # @TODO: This should be in the config...
         time.sleep(0.450)
-        #delta = 0.250
-        delta = 0.250
+        delta = 0.015
         if timeout is None:
             timeout = delta
-
 
         m = CacheMiss(self.__store.store_id, uri)
         self.miss_writer.write(m)
 
-        peers = copy.deepcopy(self.__store.discovered_stores)
-        # answers = []
+        peers = [k for k, _ in copy.deepcopy(self.__store.discovered_stores)]
+        answers = []
         self.logger.debug('DController', "Trying to resolve {0} with peers {1}".format(uri, peers))
-        maxRetries = max(len(peers)*2,  10)
+        max_retries = max(len(peers)*2,  10)
 
         retries = 0
         v = (None, -1)
-        #peers != [] and
-        while retries < maxRetries:
+        while peers != [] and retries < max_retries:
             time.sleep(timeout + max(retries - 1, 0)/10 * delta)
-        # while peers != answers:
-        #     peers = copy.deepcopy(self.__store.discovered_stores)
-            #sleep(0.2)
-            samples = list(self.hit_reader.take(DDS_ANY_STATE))
+            while set(peers) != set(answers):
+                peers = [k for k, _ in copy.deepcopy(self.__store.discovered_stores)]
+                sleep(delta)
+                samples = list(self.hit_reader.take(DDS_ANY_STATE))
 
-            self.logger.debug('DController', ">>>> Resolve loop #{} got {} samples -> {}".format(retries, len(samples), samples))
-
-            # sn = 0
-
-            for (d, i) in samples:
-                # sn += 1
-                if i.valid_data and d.key == uri:
-                    self.logger.debug('DController',"Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
-                    self.logger.debug('DController',"I was looking to resolve uri: {0}".format(uri))
-                        # # Only remove if this was an answer for this key!
-                        # if d.source_sid in peers and uri == d.key and d.dest_sid == self.__store.store_id:
-                        #     peers.remove(d.source_sid)
-                    if d.key == uri and d.dest_sid == self.__store.store_id:
-                        if int(d.version) > int(v[1]):
-                            v = (d.value, d.version)
-            retries = retries + 1
+                self.logger.debug('DController', ">>>> Resolve loop #{} got {} samples -> {}".format(retries, len(samples), samples))
+                for (d, i) in samples:
+                    if i.valid_data and d.key == uri:
+                        self.logger.debug('DController',"Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
+                        self.logger.debug('DController',"I was looking to resolve uri: {0}".format(uri))
+                        answers.append(d.source_sid)
+                            # # Only remove if this was an answer for this key!
+                            # if d.source_sid in peers and uri == d.key and d.dest_sid == self.__store.store_id:
+                            #     peers.remove(d.source_sid)
+                        if d.key == uri and d.dest_sid == self.__store.store_id:
+                            if int(d.version) > int(v[1]):
+                                v = (d.value, d.version)
+                retries = retries + 1
 
         return v
         # if v[0] is not None:
