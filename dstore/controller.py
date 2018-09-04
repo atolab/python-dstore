@@ -493,14 +493,14 @@ class StoreController (AbstractController, Observer):
 
         peers = copy.deepcopy(self.__store.discovered_stores)
         # answers = []
-        self.logger.debug('DController',"Trying to resolve {0} with peers {1}".format(uri, peers))
-        maxRetries = max(len(peers)*5,  10)
+        self.logger.debug('DController', "Trying to resolve {0} with peers {1}".format(uri, peers))
+        maxRetries = max(len(peers)*2,  10)
 
         retries = 0
         v = (None, -1)
         #peers != [] and
         while retries < maxRetries:
-            time.sleep(timeout + max(retries - 1, 0) * delta)
+            time.sleep(timeout + max(retries - 1, 0)/10 * delta)
         # while peers != answers:
         #     peers = copy.deepcopy(self.__store.discovered_stores)
             #sleep(0.2)
