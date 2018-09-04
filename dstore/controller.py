@@ -518,6 +518,7 @@ class StoreController (AbstractController, Observer):
         while flag:
             time.sleep(timeout + max(retries - 1, 0)/10 * delta)
             if set(peers) != set(answers):
+                self.logger.debug('DController', ">>>> All nodes answered exiting the loop after {} retries".format(retries))
                 flag = False
 
             if retries > 0 and (retries % 10) == 0:
@@ -537,14 +538,15 @@ class StoreController (AbstractController, Observer):
                     self.logger.debug('DController',"Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
                     self.logger.debug('DController',"I was looking to resolve uri: {0}".format(uri))
                     answers.append(d.source_sid)
-                        # # Only remove if this was an answer for this key!
-                        # if d.source_sid in peers and uri == d.key and d.dest_sid == self.__store.store_id:
-                        #     peers.remove(d.source_sid)
                     if d.key == uri and d.dest_sid == self.__store.store_id:
                         if int(d.version) > int(v[1]):
                             v = (d.value, d.version)
-            retries = retries + 1
+                        # # Only remove if this was an answer for this key!
+                        # if d.source_sid in peers and uri == d.key and d.dest_sid == self.__store.store_id:
+                        #     peers.remove(d.source_sid)
 
+            retries = retries + 1
+        self.logger.debug('DController', ">>>> Returning {}".format(v))
         return v
         # if v[0] is not None:
         #     return v
