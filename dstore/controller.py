@@ -389,7 +389,7 @@ class StoreController (AbstractController, Observer):
 
         flag = False
         self.lock.acquire()
-        peers = copy.deepcopy(self.__store.discovered_stores.keys())
+        peers = copy.deepcopy(self.__store.discovered_stores).keys()
         self.lock.release()
         count = 0
         while not flag and count < 10:
