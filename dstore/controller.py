@@ -211,8 +211,8 @@ class StoreController (AbstractController, Observer):
 
                 self.logger.debug('DController','>>>> Serving Miss MV for key {} store: {} data: {}'.format(d.key, d.source_sid, xs))
                 h = CacheHitMV(self.__store.store_id, d.source_sid, d.key, xs)
-                r_sleep = random.randint(1, 75)/100
-                time.sleep(r_sleep)
+                # r_sleep = random.randint(1, 75)/100
+                # time.sleep(r_sleep)
                 self.hitmv_writer.write(h)
 
 
@@ -491,34 +491,49 @@ class StoreController (AbstractController, Observer):
         self.lock.acquire()
         peers = copy.deepcopy(self.__store.discovered_stores).keys()
         self.lock.release()
+        flag = False
+        while not flag and count < 10:
+            if len(peers) == 0:
+                time.sleep(0.01)
+                self.lock.acquire()
+                peers = copy.deepcopy(self.__store.discovered_stores).keys()
+                self.lock.release()
+            else:
+                flag = False
+            count = count + 1
+
         answers = []
         self.logger.debug('DController', "Trying to resolve {0} with peers {1}".format(uri, peers))
         max_retries = max(len(peers)*2,  10)
 
         retries = 0
         v = (None, -1)
-        while peers != [] and retries < max_retries:
+        flag = True
+        #peers != [] and retries < max_retries
+        while flag:
             time.sleep(timeout + max(retries - 1, 0)/10 * delta)
-            while set(peers) != set(answers):
-                self.lock.acquire()
-                peers = copy.deepcopy(self.__store.discovered_stores).keys()
-                self.lock.release()
-                sleep(delta)
-                samples = list(self.hit_reader.take(DDS_ANY_STATE))
-
-                self.logger.debug('DController', ">>>> Resolve loop #{} got {} samples -> {}".format(retries, len(samples), samples))
-                for (d, i) in samples:
-                    if i.valid_data and d.key == uri:
-                        self.logger.debug('DController',"Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
-                        self.logger.debug('DController',"I was looking to resolve uri: {0}".format(uri))
-                        answers.append(d.source_sid)
-                            # # Only remove if this was an answer for this key!
-                            # if d.source_sid in peers and uri == d.key and d.dest_sid == self.__store.store_id:
-                            #     peers.remove(d.source_sid)
-                        if d.key == uri and d.dest_sid == self.__store.store_id:
-                            if int(d.version) > int(v[1]):
-                                v = (d.value, d.version)
-                retries = retries + 1
+            if set(peers) != set(answers):
+                flag = False
+            # while set(peers) != set(answers):
+            # self.lock.acquire()
+            # peers = copy.deepcopy(self.__store.discovered_stores).keys()
+            # self.lock.release()
+            sleep(delta)
+            samples = list(self.hit_reader.take(DDS_ANY_STATE))
+            
+            self.logger.debug('DController', ">>>> Resolve loop #{} got {} samples -> {}".format(retries, len(samples), samples))
+            for (d, i) in samples:
+                if i.valid_data and d.key == uri:
+                    self.logger.debug('DController',"Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
+                    self.logger.debug('DController',"I was looking to resolve uri: {0}".format(uri))
+                    answers.append(d.source_sid)
+                        # # Only remove if this was an answer for this key!
+                        # if d.source_sid in peers and uri == d.key and d.dest_sid == self.__store.store_id:
+                        #     peers.remove(d.source_sid)
+                    if d.key == uri and d.dest_sid == self.__store.store_id:
+                        if int(d.version) > int(v[1]):
+                            v = (d.value, d.version)
+            retries = retries + 1
 
         return v
         # if v[0] is not None:
