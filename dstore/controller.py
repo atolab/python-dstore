@@ -539,11 +539,10 @@ class StoreController (AbstractController, Observer):
             return False
 
     def start(self):
-        time.sleep(0.5)
         self.logger.debug('DController', "Advertising Store with Id {0}".format(self.__store.store_id))
 
         import threading
-        th = threading.Thread(target=self.advertise_presence_timer, args=[1])
+        th = threading.Thread(target=self.advertise_presence_timer, args=[0.5])
         th.setDaemon(True)
         th.start()
 

@@ -2,6 +2,7 @@ import fnmatch
 import json
 from .abstract_store import AbstractStore
 from .controller import StoreController
+import time
 
 class Store(AbstractStore):
     """This class provides the API to interact with the distributed store."""
@@ -35,6 +36,8 @@ class Store(AbstractStore):
 
         self.register_metaresource('keys', self.__get_keys_under)
         self.register_metaresource('stores', self.__get_stores)
+        time.sleep(2)
+
 
     def keys(self):
         """Get the lisy of keys available in the current store instance
