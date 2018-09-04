@@ -294,7 +294,9 @@ class StoreController (AbstractController, Observer):
                 self.logger.debug('DController', ">>> Store {0} has been disposed".format(rsid))
                 if rsid in self.__store.discovered_stores:
                     self.logger.debug('DController', ">>> Removing Store id: " + rsid)
+                    self.lock.acquire()
                     self.__store.discovered_stores.pop(rsid)
+                    self.lock.release()
 
 
     # def cache_discovered(self,reader):
