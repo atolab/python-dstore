@@ -383,7 +383,7 @@ class StoreController (AbstractController, Observer):
         # @TODO: This should be in the config...
         #delta = 0.010
         time.sleep(0.450)
-        delta = 0.005
+        delta = 0.015
         if timeout is None:
             timeout = delta
 
@@ -415,7 +415,7 @@ class StoreController (AbstractController, Observer):
         UPPER_LIMIT = 5000
 
         while not flag:
-            time.sleep(delta)
+            time.sleep(timeout + max(retries - 1, 0) / 10 * delta)
             self.logger.debug('DController', ">>>>>>>>>>>>> Resolver starting loop #{} with peers: {} answers: {}".format(retries, len(peers), len(answers)))
             samples = list(self.hitmv_reader.take(DDS_ANY_STATE))
             if retries > 0 and (retries % 10) == 0:
