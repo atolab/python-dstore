@@ -389,14 +389,14 @@ class StoreController (AbstractController, Observer):
 
         flag = False
         self.lock.acquire()
-        peers = copy.deepcopy(self.__store.discovered_stores).keys()
+        peers = list(copy.deepcopy(self.__store.discovered_stores).keys())
         self.lock.release()
         count = 0
         while not flag and count < 10:
             if len(peers) == 0:
                 time.sleep(0.01)
                 self.lock.acquire()
-                peers = copy.deepcopy(self.__store.discovered_stores).keys()
+                peers = list(copy.deepcopy(self.__store.discovered_stores).keys())
                 self.lock.release()
             else:
                 flag = True
@@ -435,14 +435,11 @@ class StoreController (AbstractController, Observer):
                     self.logger.debug('DController', "Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
                     self.logger.debug('DController', "I was looking to resolve uri: {0}".format(uri))
                     self.logger.debug('DController','>>>>>>>>> VALUE {0} KVAVE {1}'.format(values, d.kvave))
-                    if d.source_sid not in answers:
-                        self.logger.debug('DController', "New answer from {}".format(d.source_sid))
-                        answers.append(d.source_sid)
-                        if d.key == uri and d.kvave is not None: # and d.dest_sid == self.__store.store_id:
-                            values = values + d.kvave
 
-                    else:
-                        self.logger.debug('DController', "Already got an answer from {}".format(d.source_sid))
+                    self.logger.debug('DController', "New answer from {}".format(d.source_sid))
+                    answers.append(d.source_sid)
+                    if d.key == uri and d.kvave is not None: # and d.dest_sid == self.__store.store_id:
+                        values = values + d.kvave
 
             if set(peers) == set(answers):
                 self.logger.debug('DController', ">>>> All peers answered after {} retries".format(retries))
@@ -451,16 +448,11 @@ class StoreController (AbstractController, Observer):
             if retries > UPPER_LIMIT and flag is False:
                 raise RuntimeError('DStore ResolveAll - Only these peers have answered {}\n missing answers from {} '.format(answers, set(peers) - set(answers)))
 
-
             self.logger.debug('DController', ">>>>>>>>>>>>> Resolver finishing loop #{} with peers: {} answers: {}".format(retries, len(peers), len(answers)))
             retries = retries+1
 
-
-
         # now we need to consolidate values
         self.logger.debug('DController', 'Resolved Values = {0}'.format(values))
-
-        #values = list(set(values))
 
         filtered_values = {}
 
@@ -491,7 +483,7 @@ class StoreController (AbstractController, Observer):
             timeout = delta
 
         self.lock.acquire()
-        peers = copy.deepcopy(self.__store.discovered_stores).keys()
+        peers = list(copy.deepcopy(self.__store.discovered_stores).keys())
         self.lock.release()
         flag = False
         count = 0
@@ -499,7 +491,7 @@ class StoreController (AbstractController, Observer):
             if len(peers) == 0:
                 time.sleep(0.01)
                 self.lock.acquire()
-                peers = copy.deepcopy(self.__store.discovered_stores).keys()
+                peers = list(copy.deepcopy(self.__store.discovered_stores).keys())
                 self.lock.release()
             else:
                 flag = False
