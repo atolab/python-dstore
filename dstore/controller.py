@@ -445,7 +445,7 @@ class StoreController (AbstractController, Observer):
                         self.logger.debug('DController', "Already got an answer from {}".format(d.source_sid))
 
             if set(peers) == set(answers):
-                self.logger.debug('DController', ">>>> All peers answered!")
+                self.logger.debug('DController', ">>>> All peers answered after {} retries".format(retries))
                 flag = True
 
             if retries > UPPER_LIMIT and flag is False:
@@ -522,7 +522,7 @@ class StoreController (AbstractController, Observer):
 
         while flag:
             time.sleep(timeout + max(retries - 1, 0)/10 * delta)
-            if set(peers) != set(answers):
+            if set(peers) == set(answers):
                 self.logger.debug('DController', ">>>> All nodes answered exiting the loop after {} retries".format(retries))
                 flag = False
 
