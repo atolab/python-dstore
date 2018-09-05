@@ -437,7 +437,8 @@ class StoreController (AbstractController, Observer):
                     self.logger.debug('DController','>>>>>>>>> VALUE {0} KVAVE {1}'.format(values, d.kvave))
 
                     self.logger.debug('DController', "New answer from {}".format(d.source_sid))
-                    answers.append(d.source_sid)
+                    if d.source_sid not in answers:
+                        answers.append(d.source_sid)
                     if d.key == uri and d.kvave is not None: # and d.dest_sid == self.__store.store_id:
                         values = values + d.kvave
 
@@ -446,7 +447,7 @@ class StoreController (AbstractController, Observer):
                 flag = True
 
             if retries > UPPER_LIMIT and flag is False:
-                raise RuntimeError('DStore ResolveAll - Only these peers have answered {}\n missing answers from {} '.format(answers, set(peers) - set(answers)))
+                raise RuntimeError('DStore ResolveAll - Only these peers have answered {}\n missing answers from {} '.format(set(answers), set(peers) - set(answers)))
 
             self.logger.debug('DController', ">>>>>>>>>>>>> Resolver finishing loop #{} with peers: {} answers: {}".format(retries, len(peers), len(answers)))
             retries = retries+1
@@ -534,7 +535,8 @@ class StoreController (AbstractController, Observer):
                 if i.valid_data and d.key == uri:
                     self.logger.debug('DController', "Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
                     self.logger.debug('DController', "I was looking to resolve uri: {0}".format(uri))
-                    answers.append(d.source_sid)
+                    if d.source_sid not in answers:
+                        answers.append(d.source_sid)
                     if d.key == uri and d.dest_sid == self.__store.store_id:
                         if int(d.version) > int(v[1]):
                             v = (d.value, d.version)
