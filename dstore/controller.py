@@ -515,10 +515,6 @@ class StoreController (AbstractController, Observer):
 
         while flag:
             time.sleep(timeout + max(retries - 1, 0)/10 * delta)
-            if set(peers) == set(answers):
-                self.logger.debug('DController', ">>>> All nodes answered exiting the loop after {} retries".format(retries))
-                flag = False
-
             if retries > 0 and (retries % 10) == 0:
                 self.logger.debug('DController', ">>>> Resolve loop #{} sending another miss!!".format(retries))
                 self.miss_writer.write(m)
@@ -546,6 +542,10 @@ class StoreController (AbstractController, Observer):
                         #     peers.remove(d.source_sid)
 
             retries = retries + 1
+
+            if set(peers) == set(answers):
+                self.logger.debug('DController', ">>>> All nodes answered exiting the loop after {} retries".format(retries))
+                flag = False
 
             if retries > UPPER_LIMIT and flag is True:
                 raise RuntimeError('DStore Resolve - Only these peers have answered {}\n missing answers from {} '.format(answers, set(peers) - set(answers)))
