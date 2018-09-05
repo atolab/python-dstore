@@ -533,11 +533,12 @@ class StoreController (AbstractController, Observer):
             self.logger.debug('DController', ">>>> Resolve loop #{} got {} samples -> {}".format(retries, len(samples), samples))
             for (d, i) in samples:
                 if i.valid_data and d.key == uri:
-                    self.logger.debug('DController', "Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
+                    self.logger.debug('DController', "Received data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
                     self.logger.debug('DController', "I was looking to resolve uri: {0}".format(uri))
                     if d.source_sid not in answers:
                         answers.append(d.source_sid)
                     if d.key == uri and d.dest_sid == self.__store.store_id:
+                        self.logger.debug('DController', "Received from {} -> {}".format(d.source_sid, d.value))
                         if int(d.version) > int(v[1]):
                             v = (d.value, d.version)
                         # # Only remove if this was an answer for this key!
