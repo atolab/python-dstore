@@ -550,6 +550,7 @@ class StoreController (AbstractController, Observer):
             if retries > UPPER_LIMIT and flag is True:
                 raise RuntimeError('DStore Resolve - Only these peers have answered {}\n missing answers from {} '.format(answers, set(peers) - set(answers)))
 
+        self.logger.debug('DController', "Resolved answers from {}".format(answers))
         self.logger.debug('DController', ">>>> Returning {}".format(v))
         return v
         # if v[0] is not None:
