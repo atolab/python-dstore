@@ -261,7 +261,7 @@ class StoreController (AbstractController, Observer):
                 self.logger.debug('DController',">>>>>> Some store unregistered instance {0}".format(d.key))
 
     def cache_discovered(self, reader):
-        self.logger.debug('DController', 'New Cache discovered, current view = {0}'.format(self.__store.discovered_stores))
+        self.logger.debug('DController', 'cache_discovered, current view = {0}'.format(self.__store.discovered_stores))
         samples = reader.take(DDS_ANY_SAMPLE_STATE)
         t_now = time.time()
 
@@ -372,9 +372,9 @@ class StoreController (AbstractController, Observer):
         # self.logger.debug('DController',"onConflict Not yet...")
 
     def resolveAll(self, uri, timeout=None):
-        self.logger.info('DController', '>>>> Handling {0} Miss MV for store {1}'.format(uri, self.__store.store_id))
+        self.logger.info('DController - resolveAll', '>>>> Handling {0} Miss MV for store {1}'.format(uri, self.__store.store_id))
 
-        self.logger.info('DController', ">> Trying to resolve {}".format(uri))
+        self.logger.info('DController - resolveAll', ">> Trying to resolve {}".format(uri))
         """
             Tries to resolve this URI (with wildcards) across the distributed caches
             :param uri: the URI to be resolved
@@ -416,44 +416,44 @@ class StoreController (AbstractController, Observer):
 
         while not flag:
             time.sleep(timeout + max(retries - 1, 0) / 10 * delta)
-            self.logger.debug('DController', ">>>>>>>>>>>>> Resolver starting loop #{} with peers: {} answers: {}".format(retries, len(peers), len(answers)))
+            self.logger.debug('DController - resolveAll', ">>>>>>>>>>>>> Resolver starting loop #{} with peers: {} answers: {}".format(retries, len(peers), len(answers)))
             samples = list(self.hitmv_reader.take(DDS_ANY_STATE))
             if retries > 0 and (retries % 10) == 0:
-                self.logger.debug('DController', ">>>> Resolve loop #{} sending another miss!!".format(retries))
+                self.logger.debug('DController - resolveAll', ">>>> Resolve loop #{} sending another miss!!".format(retries))
                 self.missmv_writer.write(m)
             # if retries > max_retries:
             #     self.logger.debug('DController', ">>>> Reached max retries giving up!")
             #     flag = True
 
-            self.logger.debug('DController', ">>>> Resolve loop #{} got {} samples -> {}".format(retries, len(samples), samples))
+            self.logger.debug('DController - resolveAll', ">>>> Resolve loop #{} got {} samples -> {}".format(retries, len(samples), samples))
             for s in samples:
                 d = s[0]
                 i = s[1]
-                self.logger.debug('DController', "Is valid data: {0}".format(i.valid_data))
-                self.logger.debug('DController', "Key: {0}".format(d.key))
+                self.logger.debug('DController - resolveAll', "Is valid data: {0}".format(i.valid_data))
+                self.logger.debug('DController - resolveAll', "Key: {0}".format(d.key))
                 if i.valid_data:
-                    self.logger.debug('DController', "Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
-                    self.logger.debug('DController', "I was looking to resolve uri: {0}".format(uri))
-                    self.logger.debug('DController','>>>>>>>>> VALUE {0} KVAVE {1}'.format(values, d.kvave))
+                    self.logger.debug('DController - resolveAll', "Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
+                    self.logger.debug('DController - resolveAll', "I was looking to resolve uri: {0}".format(uri))
+                    self.logger.debug('DController - resolveAll','>>>>>>>>> VALUE {0} KVAVE {1}'.format(values, d.kvave))
 
-                    self.logger.debug('DController', "New answer from {}".format(d.source_sid))
+                    self.logger.debug('DController - resolveAll', "New answer from {}".format(d.source_sid))
                     if d.source_sid not in answers:
                         answers.append(d.source_sid)
                     if d.key == uri and d.kvave is not None: # and d.dest_sid == self.__store.store_id:
                         values = values + d.kvave
 
             if set(peers) == set(answers):
-                self.logger.debug('DController', ">>>> All peers answered after {} retries".format(retries))
+                self.logger.debug('DController - resolveAll', ">>>> All peers answered after {} retries".format(retries))
                 flag = True
 
             if retries > UPPER_LIMIT:
                 raise RuntimeError('DStore ResolveAll - Only these peers have answered {}\n missing answers from {} '.format(set(answers), set(peers) - set(answers)))
 
-            self.logger.debug('DController', ">>>>>>>>>>>>> Resolver finishing loop #{} with peers: {} answers: {}".format(retries, len(peers), len(answers)))
+            self.logger.debug('DController - resolveAll', ">>>>>>>>>>>>> Resolver finishing loop #{} with peers: {} answers: {}".format(retries, len(peers), len(answers)))
             retries = retries+1
 
         # now we need to consolidate values
-        self.logger.debug('DController', 'Resolved Values = {0}'.format(values))
+        self.logger.debug('DController - resolveAll', 'Resolved Values = {0}'.format(values))
 
         filtered_values = {}
 
@@ -464,13 +464,15 @@ class StoreController (AbstractController, Observer):
                 if ve > filtered_values.get(k)[2]:
                     filtered_values.update({k: (k, va, ve)})
 
-        self.logger.debug('DController',"Filtered Values = {0}".format(filtered_values))
+        self.logger.debug('DController - resolveAll', "Resolved answers from {}".format(answers))
+        self.logger.debug('DController - resolveAll', "Returning Filtered Values = {}".format(filtered_values))
+
         return list(filtered_values.values())
 
     def resolve(self, uri, timeout = None):
-        self.logger.debug('DController','>>>> Handling {0} Miss for store {1}'.format(uri, self.__store.store_id))
+        self.logger.debug('DController - resolve', '>>>> Handling {0} Miss for store {1}'.format(uri, self.__store.store_id))
 
-        self.logger.debug('DController',">> Trying to resolve {}".format(uri))
+        self.logger.debug('DController - resolve', ">> Trying to resolve {}".format(uri))
         """
             Tries to resolve this URI on across the distributed caches
             :param uri: the URI to be resolved
@@ -499,7 +501,7 @@ class StoreController (AbstractController, Observer):
             count = count + 1
 
         answers = []
-        self.logger.debug('DController', "Trying to resolve {0} with peers {1}".format(uri, peers))
+        self.logger.debug('DController - resolve', "Trying to resolve {0} with peers {1}".format(uri, peers))
         max_retries = max(len(peers)*2,  10)
 
         retries = 0
@@ -516,7 +518,7 @@ class StoreController (AbstractController, Observer):
         while flag:
             time.sleep(timeout + max(retries - 1, 0)/10 * delta)
             if retries > 0 and (retries % 10) == 0:
-                self.logger.debug('DController', ">>>> Resolve loop #{} sending another miss!!".format(retries))
+                self.logger.debug('DController - resolve', ">>>> Resolve loop #{} sending another miss!!".format(retries))
                 self.miss_writer.write(m)
 
             # while set(peers) != set(answers):
@@ -526,15 +528,15 @@ class StoreController (AbstractController, Observer):
             #sleep(delta)
             samples = list(self.hit_reader.take(DDS_ANY_STATE))
             
-            self.logger.debug('DController', ">>>> Resolve loop #{} got {} samples -> {}".format(retries, len(samples), samples))
+            self.logger.debug('DController - resolve', ">>>> Resolve loop #{} got {} samples -> {}".format(retries, len(samples), samples))
             for (d, i) in samples:
                 if i.valid_data and d.key == uri:
-                    self.logger.debug('DController', "Received data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
-                    self.logger.debug('DController', "I was looking to resolve uri: {0}".format(uri))
+                    self.logger.debug('DController - resolve', "Received data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
+                    self.logger.debug('DController - resolve', "I was looking to resolve uri: {0}".format(uri))
                     if d.source_sid not in answers:
                         answers.append(d.source_sid)
                     if d.key == uri and d.dest_sid == self.__store.store_id:
-                        self.logger.debug('DController', "Received from {} -> {}".format(d.source_sid, d.value))
+                        self.logger.debug('DController - resolve', "Received from {} -> {}".format(d.source_sid, d.value))
                         if int(d.version) > int(v[1]):
                             v = (d.value, d.version)
                         # # Only remove if this was an answer for this key!
@@ -544,14 +546,14 @@ class StoreController (AbstractController, Observer):
             retries = retries + 1
 
             if set(peers) == set(answers):
-                self.logger.debug('DController', ">>>> All nodes answered exiting the loop after {} retries".format(retries))
+                self.logger.debug('DController - resolve', ">>>> All nodes answered exiting the loop after {} retries".format(retries))
                 flag = False
 
             if retries > UPPER_LIMIT:
                 raise RuntimeError('DStore Resolve - Only these peers have answered {}\n missing answers from {} '.format(answers, set(peers) - set(answers)))
 
-        self.logger.debug('DController', "Resolved answers from {}".format(answers))
-        self.logger.debug('DController', ">>>> Returning {}".format(v))
+        self.logger.debug('DController - resolve', "Resolved answers from {}".format(answers))
+        self.logger.debug('DController - resolve', ">>>> Returning {}".format(v))
         return v
         # if v[0] is not None:
         #     return v
