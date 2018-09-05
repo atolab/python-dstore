@@ -211,8 +211,9 @@ class StoreController (AbstractController, Observer):
 
                 self.logger.debug('DController','>>>> Serving Miss MV for key {} store: {} data: {}'.format(d.key, d.source_sid, xs))
                 h = CacheHitMV(self.__store.store_id, d.source_sid, d.key, xs)
-                # r_sleep = random.randint(1, 75)/100
-                # time.sleep(r_sleep)
+                delta = 0.025
+                r_sleep = random.randint(1, 75)
+                time.sleep(r_sleep*delta)
                 self.hitmv_writer.write(h)
 
 
@@ -464,8 +465,6 @@ class StoreController (AbstractController, Observer):
                 if ve > filtered_values.get(k)[2]:
                     filtered_values.update({k: (k, va, ve)})
 
-
-
         self.logger.debug('DController',"Filtered Values = {0}".format(filtered_values))
         return list(filtered_values.values())
 
@@ -484,8 +483,6 @@ class StoreController (AbstractController, Observer):
         delta = 0.015
         if timeout is None:
             timeout = delta
-
-
 
         self.lock.acquire()
         peers = copy.deepcopy(self.__store.discovered_stores).keys()
@@ -535,8 +532,8 @@ class StoreController (AbstractController, Observer):
             self.logger.debug('DController', ">>>> Resolve loop #{} got {} samples -> {}".format(retries, len(samples), samples))
             for (d, i) in samples:
                 if i.valid_data and d.key == uri:
-                    self.logger.debug('DController',"Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
-                    self.logger.debug('DController',"I was looking to resolve uri: {0}".format(uri))
+                    self.logger.debug('DController', "Reveived data from store {0} for store {1} on key {2}".format(d.source_sid, d.dest_sid, d.key))
+                    self.logger.debug('DController', "I was looking to resolve uri: {0}".format(uri))
                     answers.append(d.source_sid)
                     if d.key == uri and d.dest_sid == self.__store.store_id:
                         if int(d.version) > int(v[1]):
