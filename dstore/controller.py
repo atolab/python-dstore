@@ -86,7 +86,6 @@ class StoreController (AbstractController, Observer):
         self.missmv_topic = self.dds_controller.missmv_topic
         self.hitmv_topic = self.dds_controller.hitmv_topic
 
-
         self.store_info_writer = FlexyWriter(self.pub,
                                              self.store_info_topic,
                                              DDS_State)
@@ -384,7 +383,7 @@ class StoreController (AbstractController, Observer):
         # @TODO: This should be in the config...
         #delta = 0.010
         time.sleep(0.450)
-        delta = 0.100
+        delta = 0.005
         if timeout is None:
             timeout = delta
 
@@ -413,7 +412,10 @@ class StoreController (AbstractController, Observer):
         answers = []
         flag = False
 
+        UPPER_LIMIT = 5000
+
         while not flag:
+            time.sleep(delta)
             self.logger.debug('DController', ">>>>>>>>>>>>> Resolver starting loop #{} with peers: {} answers: {}".format(retries, len(peers), len(answers)))
             samples = list(self.hitmv_reader.take(DDS_ANY_STATE))
             if retries > 0 and (retries % 10) == 0:
@@ -445,6 +447,10 @@ class StoreController (AbstractController, Observer):
             if set(peers) == set(answers):
                 self.logger.debug('DController', ">>>> All peers answered!")
                 flag = True
+
+            if retries > UPPER_LIMIT and flag is False:
+                raise RuntimeError('Only there peers have answered {}\n missing answers from {} '.format(answers, set(peers) - set(answers)))
+
 
             self.logger.debug('DController', ">>>>>>>>>>>>> Resolver finishing loop #{} with peers: {} answers: {}".format(retries, len(peers), len(answers)))
             retries = retries+1
@@ -479,7 +485,7 @@ class StoreController (AbstractController, Observer):
         """
 
         # @TODO: This should be in the config...
-        time.sleep(0.450)
+        time.sleep(0.25)
         delta = 0.015
         if timeout is None:
             timeout = delta
@@ -512,6 +518,8 @@ class StoreController (AbstractController, Observer):
         m = CacheMiss(self.__store.store_id, uri)
         self.miss_writer.write(m)
 
+        UPPER_LIMIT = 5000
+
         while flag:
             time.sleep(timeout + max(retries - 1, 0)/10 * delta)
             if set(peers) != set(answers):
@@ -543,6 +551,10 @@ class StoreController (AbstractController, Observer):
                         #     peers.remove(d.source_sid)
 
             retries = retries + 1
+
+            if retries > UPPER_LIMIT and flag is True:
+                raise RuntimeError('DDOnly there peers have answered {}\n missing answers from {} '.format(answers, set(peers) - set(answers)))
+
         self.logger.debug('DController', ">>>> Returning {}".format(v))
         return v
         # if v[0] is not None:
