@@ -212,7 +212,7 @@ class StoreController (AbstractController, Observer):
                 self.logger.debug('DController','>>>> Serving Miss MV for key {} store: {} data: {}'.format(d.key, d.source_sid, xs))
                 h = CacheHitMV(self.__store.store_id, d.source_sid, d.key, xs)
                 delta = 0.025
-                r_sleep = random.randint(1, 75)
+                r_sleep = random.randint(1, 75)/100
                 time.sleep(r_sleep*delta)
                 self.hitmv_writer.write(h)
 
