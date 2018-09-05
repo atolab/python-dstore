@@ -449,7 +449,7 @@ class StoreController (AbstractController, Observer):
                 flag = True
 
             if retries > UPPER_LIMIT and flag is False:
-                raise RuntimeError('Only there peers have answered {}\n missing answers from {} '.format(answers, set(peers) - set(answers)))
+                raise RuntimeError('DStore ResolveAll - Only these peers have answered {}\n missing answers from {} '.format(answers, set(peers) - set(answers)))
 
 
             self.logger.debug('DController', ">>>>>>>>>>>>> Resolver finishing loop #{} with peers: {} answers: {}".format(retries, len(peers), len(answers)))
@@ -553,7 +553,7 @@ class StoreController (AbstractController, Observer):
             retries = retries + 1
 
             if retries > UPPER_LIMIT and flag is True:
-                raise RuntimeError('DDOnly there peers have answered {}\n missing answers from {} '.format(answers, set(peers) - set(answers)))
+                raise RuntimeError('DStore Resolve - Only these peers have answered {}\n missing answers from {} '.format(answers, set(peers) - set(answers)))
 
         self.logger.debug('DController', ">>>> Returning {}".format(v))
         return v
