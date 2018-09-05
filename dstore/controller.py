@@ -445,7 +445,6 @@ class StoreController (AbstractController, Observer):
             if set(peers) == set(answers):
                 self.logger.debug('DController', ">>>> All peers answered after {} retries".format(retries))
                 flag = True
-                break
 
             if retries > UPPER_LIMIT:
                 raise RuntimeError('DStore ResolveAll - Only these peers have answered {}\n missing answers from {} '.format(set(answers), set(peers) - set(answers)))
@@ -547,7 +546,6 @@ class StoreController (AbstractController, Observer):
             if set(peers) == set(answers):
                 self.logger.debug('DController', ">>>> All nodes answered exiting the loop after {} retries".format(retries))
                 flag = False
-                break
 
             if retries > UPPER_LIMIT:
                 raise RuntimeError('DStore Resolve - Only these peers have answered {}\n missing answers from {} '.format(answers, set(peers) - set(answers)))
