@@ -412,7 +412,7 @@ class StoreController (AbstractController, Observer):
         answers = []
         flag = False
 
-        UPPER_LIMIT = 5000
+        UPPER_LIMIT = 500
 
         while not flag:
             time.sleep(timeout + max(retries - 1, 0) / 10 * delta)
@@ -511,7 +511,7 @@ class StoreController (AbstractController, Observer):
         m = CacheMiss(self.__store.store_id, uri)
         self.miss_writer.write(m)
 
-        UPPER_LIMIT = 5000
+        UPPER_LIMIT = 500
 
         while flag:
             time.sleep(timeout + max(retries - 1, 0)/10 * delta)
@@ -580,14 +580,14 @@ class StoreController (AbstractController, Observer):
             self.logger.debug('DController', "Advertising Store with Id {}".format(self.__store.store_id))
             info = StoreInfo(sid=self.__store.store_id, sroot=self.__store.root, shome=self.__store.home)
             self.store_info_writer.write(info)
-            self.lock.acquire()
-            sd = copy.deepcopy(self.__store.discovered_stores)
-            self.lock.release()
-            for k in sd:
-                if sd.get(k) > 7:
-                    self.lock.acquire()
-                    self.__store.discovered_stores.pop(k)
-                    self.lock.release()
+            # self.lock.acquire()
+            # sd = copy.deepcopy(self.__store.discovered_stores)
+            # self.lock.release()
+            # for k in sd:
+            #     if sd.get(k) > 7:
+            #         self.lock.acquire()
+            #         self.__store.discovered_stores.pop(k)
+            #         self.lock.release()
             time.sleep(timer+1)
     # def start(self):
     #     self.logger.debug('DController',"Advertising Store with Id {0}".format(self.__store.store_id))
